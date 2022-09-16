@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>kiamo pie</title>
+    <style>
+        .pie-graph {
+            display: inline-block;
+            width: 250px;
+            height: 250px;
+            border-radius: 50%;
+            background-image: conic-gradient(
+                #37c 30deg, 
+                #3c7 30deg,
+                #3c7 65deg,
+                orange 65deg,
+                orange 110deg,
+                #f73 110deg,
+                #f73 200deg,
+                #ccc 200deg
+            )
+        }
+    </style>
+</head>
+
+<body>
+    <h1>HTML+CSS、SVG、Canvas 三种方式实现饼图</h1>
+    <table>
+        <tr>
+            <th>HTML+CSS</th>
+            <th>SVG</th>
+            <th>Canvas</th>
+        </tr>
+        <tr>
+            <td>
+                <div class="pie-graph"></div>
+            </td>
+            <td>
+                <div id="svg"></div>
+            </td>
+            <td>
+                <div id="canvas"></div>
+            </td>
+        </tr>
+    </table>
+    <script>
+        // 数据处理
+        function prepare({ values, colors }) {
+            const sum = values.reduce((x, y) => x + y)
+            return values.map((x, i) => [(x / sum) * 2 * Math.PI, colors[i]])
+        }
+
+        // svg 绘制饼图
+        function drawSvgPie(el, { data, center, radius }) {
+            const paths = []
+            let start = { x: center.x, y: center.y - radius }
+            let deg = 0
+            for (const [value, color] of data) {
+                deg += value
+                const end = {
+                    x: center.x + radius * Math.sin(deg),
+                    y: center.y - radius * Math.cos(deg)
+                }
+                const largeArc = value >= Math.PI ? 1 : 0
+                const pathD =
+                    `M ${center.x} ${center.y}` +
+                    `L ${start.x} ${start.y}` +
+                    `A ${radius} ${radius} 0 ${largeArc} 1 ${end.x} ${end.y}` +
+                    'Z'
+                paths.push(`<path d="${pathD}" fill="${color}" />`)
+                start = end
+            }
+            const d = radius * 2
+            el.innerHTML =
+                '<svg xmlns="http://www.w3.org/2000/svg" ' +
+                    `width="${d}px" height="${d}px" viewBox="0 0 ${d} ${d}">` +
+                    paths.join('') +
+                '</svg>'
+        }
+
+        // canvas 绘制饼图
+        function drawCanvasPie(el, { data, center, radius }) {
+            const canvas = document.createElement('canvas')
+            canvas.setAttribute('width', radius * 2)
+            canvas.setAttribute('height', radius * 2)
+            const ctx = canvas.getContext('2d')
+            let start = -Math.PI / 2
+            for (const [value, color] of data) {
+                const end = start + value
+                ctx.beginPath()
+                ctx.arc(center.x, center.y, radius, start, end, false)
+                ctx.lineTo(center.x, center.y)
+                ctx.fillStyle = color
+                ctx.fill()
+                ctx.closePath()
+                start = end
+            }
+            el.append(canvas)
+        }
+
+        // 页面加载完成
+        window.onload = function () {
+            const values = [30, 35, 45, 90, 160]
+            const colors = ['#37c', '#3c7', 'orange', '#f73', '#ccc']
+            const commonData = {
+                data: prepare({ values, colors }),
+                center: { x: 125, y: 125 },
+                radius: 125
+            }
+            console.log(commonData)
+            drawCanvasPie(document.querySelector('#canvas'), commonData)
+            drawSvgPie(document.querySelector('#svg'), commonData)
+        }
+    </script>
+</body>
+
+</html>
