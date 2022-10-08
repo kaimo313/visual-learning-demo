@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>如何用Canvas绘制层次关系图(2)</title>
+    <style>
+        canvas {
+            width: 800px;
+            height: 800px;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas width="1600" height="1600"></canvas>
+    <script src="https://d3js.org/d3-hierarchy.v1.min.js"></script>
+    <script type="module">
+        import dataSource from './data/map.js';
+        // 用 d3.hierarchy(data).sum(…).sort(…) 将省份数据按照包含城市的数量，从多到少排序
+        const regions = d3.hierarchy(dataSource)
+            .sum(d => 1)
+            .sort((a, b) => b.value - a.value);
+
+        // 通过 d3.pack() 将数据映射为一组 1600 宽高范围内的圆形，留3px的padding
+        const pack = d3.pack()
+            .size([1600, 1600])
+            .padding(3);
+
+        const root = pack(regions);
+
+        console.log(root)
+
+        const canvas = document.querySelector('canvas');
+        const context = canvas.getContext('2d');
+
+        function draw(ctx, node, { fillStyle = 'rgba(0, 0, 0, 0.2)', textColor = 'white' } = {}) {
+            const children = node.children;
+            const { x, y, r } = node;
+            ctx.fillStyle = fillStyle;
+            ctx.beginPath();
+            // arc 方法的五个参数分别是圆心的 x、y 坐标、半径 r、起始角度和结束角度
+            ctx.arc(x, y, r, 0, 2 * Math.PI);
+            ctx.fill();
+            if (children) {
+                // 遍历子节点绘制
+                for (let i = 0; i < children.length; i++) {
+                    draw(context, children[i]);
+                }
+            } else {
+                // 绘制文本
+                ctx.fillStyle = textColor;
+                ctx.font = '1.5rem Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(node.data.name, x, y);
+            }
+        }
+
+        draw(context, root);
+    </script>
+</body>
+
+</html>

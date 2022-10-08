@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>如何用Canvas绘制层次关系图</title>
+    <style>
+        canvas {
+            border: 1px dashed salmon;
+        }
+    </style>
+</head>
+<body>
+    <canvas width="512" height="512"></canvas>
+
+    <script>
+        const canvas = document.querySelector("canvas");
+        const context = canvas.getContext("2d");
+
+        /*****方法一：直接改变要绘制的图形顶点的坐标位置*****/
+        // 将正方形填充成绿色
+        context.fillStyle = "green";
+        // 绘制的路径
+        context.beginPath();
+        // 调用 rect 指令完成绘图
+        context.rect(canvas.width/2 - 50, canvas.height/2 - 50, 100, 100);
+        // 将绘制的内容真正输出到画布中
+        context.fill();
+
+        /*****方法二：对 Canvas 画布的整体做一个平移操作*****/
+        // 将正方形填充成橙红色
+        context.fillStyle = "salmon";
+        // 绘制的路径
+        context.beginPath();
+        // 暂存状态
+        context.save();
+        // 平移
+        context.translate(-25, -25);
+        // 调用 rect 指令完成绘图
+        context.rect(canvas.width/2, canvas.height/2, 50, 50);
+        // 恢复状态
+        context.restore();
+        // 将绘制的内容真正输出到画布中
+        context.fill();
+    </script>
+</body>
+</html>
