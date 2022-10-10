@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>如何用WebGL绘制最简单的几何图形</title>
+    <style>
+        canvas {
+            border: 1px dashed salmon;
+        }
+    </style>
+</head>
+<body>
+    <canvas width="240" height="240"></canvas>
+    <script>
+        // 获取 webgl 上下文
+        const canvas = document.querySelector('canvas');
+        const gl = canvas.getContext('webgl');
+        // 顶点着色器代码片段：attribute 表示声明变量，vec2 是变量的类型，它表示一个二维向量，position 是变量名。
+        const vertex = `
+            attribute vec2 position;
+
+            void main() {
+                gl_PointSize = 1.0;
+                gl_Position = vec4(position, 1.0, 1.0);
+            }
+        `;
+        // 片元着色器代码片段：gl_FragColor 的值来定义和改变图形的颜色，RGBA 色值表示的四维向量数据
+        // rgba(250,128,114,1) vec4(250/255, 128/255, 114/255, 1)
+        const fragment = `
+            precision mediump float;
+
+            void main() {
+                gl_FragColor = vec4(0.9803921568627451, 0.5019607843137255, 0.4470588235294118, 1);
+            }    
+        `;
+        // 将着色器代码片段创建成 shader 对象
+        const vertexShader = gl.createShader(gl.VERTEX_SHADER);
+        gl.shaderSource(vertexShader, vertex);
+        gl.compileShader(vertexShader);
+
+        const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
+        gl.shaderSource(fragmentShader, fragment);
+        gl.compileShader(fragmentShader);
+        
+        // 创建 WebGLProgram 对象
+        const program = gl.createProgram();
+        // 将两个 shader 关联到 WebGL 程序
+        gl.attachShader(program, vertexShader);
+        gl.attachShader(program, fragmentShader);
+        // 将 WebGLProgram 对象链接到 WebGL 上下文对象上
+        gl.linkProgram(program);
+        // 通过 useProgram 选择启用 WebGLProgram 对象
+        gl.useProgram(program);
+
+        // 定义三角形的三个顶点
+        const points = new Float32Array([
+            -1, -1,
+            0, 1,
+            1, -1,
+        ]);
+        console.log("points---->", points)
+
+        // 创建一个缓存对象
+        const bufferId = gl.createBuffer();
+        // 将它绑定为当前操作对象
+        gl.bindBuffer(gl.ARRAY_BUFFER, bufferId);
+        // 再把当前的数据写入缓存对象
+        gl.bufferData(gl.ARRAY_BUFFER, points, gl.STATIC_DRAW);
+
+        // 获取顶点着色器中的position变量的地址
+        const vPosition = gl.getAttribLocation(program, 'position');
+        console.log("vPosition---->", vPosition)
+        // 给变量设置长度和类型
+        gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
+        // 激活这个变量
+        gl.enableVertexAttribArray(vPosition);
+
+        // 将当前画布的内容清除
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        // 传入三角形图元、顶点偏移量和顶点数量进行绘制
+        gl.drawArrays(gl.TRIANGLES, 0, points.length / 2);
+    </script>
+</body>
+</html>
