@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用向量绘制一棵树</title>
+    <style>
+        canvas {
+            border: 1px dashed salmon;
+        }
+    </style>
+</head>
+<body>
+    <canvas width="640" height="512"></canvas>
+    <script type="module">
+        import {Vector2D} from './common/lib/vector2d.js';
+
+        const canvas = document.querySelector('canvas');
+        const ctx = canvas.getContext('2d');
+        // 以画布左下角为原点
+        ctx.translate(0, canvas.height);
+        // x 轴向右，y 轴向上的坐标系
+        ctx.scale(1, -1);
+        ctx.lineCap = 'round';
+        /**
+         * 画树枝的函数
+         * context 是 Canvas2D 上下文
+         *   v0 是起始向量
+         *   length 是当前树枝的长度
+         *   thickness 是当前树枝的粗细
+         *   dir 是当前树枝的方向，用与 x 轴的夹角表示，单位是弧度。
+         *   bias 是一个随机偏向因子，用来让树枝的朝向有一定的随机性
+         * */ 
+        function drawBranch(context, v0, length, thickness, dir, bias) {
+            // 计算出树枝的终点坐标；创建一个单位向量 (1, 0)，它是一个朝向 x 轴，长度为 1 的向量。然后旋转 dir 弧度，再乘以树枝长度 length。
+            const v = new Vector2D().rotate(dir).scale(length);
+            const v1 = v0.copy().add(v);
+
+            // 绘制一个固定方向的树枝为根部
+            context.lineWidth = thickness;
+            context.beginPath();
+            context.moveTo(...v0);
+            context.lineTo(...v1);
+            context.stroke();
+
+            // 从一个起始角度开始递归地旋转树枝，每次将树枝分叉成左右两个分枝        
+            if(thickness > 2) {
+                const left = Math.PI / 4 + 0.5 * (dir + 0.2) + bias * (Math.random() - 0.5);
+                drawBranch(context, v1, length * 0.9, thickness * 0.8, left, bias * 0.9);
+                const right = Math.PI / 4 + 0.5 * (dir - 0.2) + bias * (Math.random() - 0.5);
+                drawBranch(context, v1, length * 0.9, thickness * 0.8, right, bias * 0.9);
+            }
+            // 随机绘制花瓣
+            if(thickness < 5 && Math.random() < 0.3) {
+                context.save();
+                context.strokeStyle = '#c72c35';
+                const th = Math.random() * 6 + 3;
+                context.lineWidth = th;
+                context.beginPath();
+                context.moveTo(...v1);
+                context.lineTo(v1.x, v1.y - 2);
+                context.stroke();
+                context.restore();
+            }
+        }
+        // 在(256, 0)位置绘制
+        const v0 = new Vector2D(256, 0);
+        drawBranch(ctx, v0, 50, 10, 1, 3);
+    </script>
+</body>
+</html>

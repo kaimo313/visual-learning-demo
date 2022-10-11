@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>不转换坐标系</title>
+    <style>
+        canvas {
+            border: 1px dashed salmon;
+        }
+    </style>
+</head>
+<body>
+    <canvas width="512" height="256"></canvas>
+    <script src="https://lib.baomitu.com/rough.js/3.1.0/rough.umd.js"></script>
+    <script>
+        const rc = rough.canvas(document.querySelector('canvas'));
+        console.log(rc)
+        const hillOpts = {
+            roughness: 2.8,
+            strokeWidth: 2,
+            fill: 'cyan'
+        };
+        rc.path('M76 256 L176 156 L276 256', hillOpts);
+        rc.path('M236 256 L336 156 L436 256', hillOpts);
+        rc.circle(256, 106, 105, {
+            stroke: 'red',
+            strokeWidth: 4,
+            fill: 'salmon',
+            fillStyle: 'solid',
+        });
+    </script>
+</body>
+</html>

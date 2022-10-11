@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>转换坐标系</title>
+    <style>
+        canvas {
+            border: 1px dashed salmon;
+        }
+    </style>
+</head>
+<body>
+    <canvas width="512" height="256"></canvas>
+    <script src="https://lib.baomitu.com/rough.js/3.1.0/rough.umd.js"></script>
+    <script>
+        const rc = rough.canvas(document.querySelector('canvas'));
+        console.log(rc)
+        const ctx = rc.ctx;
+        // 以画布底边中点为原点
+        ctx.translate(256, 256);
+        // x 轴向右，y 轴向上的坐标系
+        ctx.scale(1, -1);
+        const hillOpts = {
+            roughness: 2.8,
+            strokeWidth: 2,
+            fill: 'gray'
+        };
+        // //线条宽度
+        // ctx.lineWidth = 2;
+        // ctx.fillStyle = 'orange';
+        // //线条颜色填充
+        // ctx.strokeStyle = 'black';
+        // //开启绘画路径
+        // ctx.beginPath();
+        // //画笔初始化点
+        // ctx.moveTo(-180, 0);
+        // // 画笔目标位置
+        // ctx.lineTo(-80, 100);
+        // // 连接路径
+        // ctx.stroke();
+        // ctx.lineTo(20, 0);
+        // ctx.stroke();
+        // ctx.closePath(); //闭合线路(首尾坐标)
+        // ctx.stroke(); //连接首尾
+        // ctx.fill();
+        rc.path('M-180 0 L-80 100 L20 0', hillOpts);
+        rc.path('M-20 0 L80 100 L180 0', hillOpts);
+        rc.circle(0, 150, 105, {
+            stroke: 'salmon',
+            strokeWidth: 4,
+            fill: 'gold',
+            fillStyle: 'solid',
+        });
+    </script>
+</body>
+</html>
