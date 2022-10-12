@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>扫描器</title>
+</head>
+<body>
+    <script type="module">
+        import { Vector2D } from './common/lib/vector2d.js';
+        
+        function isInRange(v, a) {
+            // a.normalize() 即将 a 归一化
+            // dot(v) => this.x * v.x + v.y * this.y
+            return v.dot(a.normalize()) >= Math.cos(Math.PI/6);
+        }
+        console.log("向量（1,1）在扫描范围里吗", isInRange(new Vector2D(0, 1), new Vector2D(1, 1)))
+        console.log("向量（0, 0）在扫描范围里吗", isInRange(new Vector2D(0, 1), new Vector2D(0, 0)))
+        console.log("向量（0, 2）在扫描范围里吗", isInRange(new Vector2D(0, 1), new Vector2D(0, 2)))
+        console.log("向量（0, -2）在扫描范围里吗", isInRange(new Vector2D(0, 1), new Vector2D(0, -2)))
+        console.log("向量（2, 0）在扫描范围里吗", isInRange(new Vector2D(0, 1), new Vector2D(2, 0)))
+        console.log("向量（-2, 0）在扫描范围里吗", isInRange(new Vector2D(0, 1), new Vector2D(-2, 0)))
+        console.log("向量（1, 4）在扫描范围里吗", isInRange(new Vector2D(0, 1), new Vector2D(1, 4)))
+    </script>
+</body>
+</html>
