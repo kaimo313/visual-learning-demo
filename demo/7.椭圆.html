@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>椭圆</title>
+    <style>
+        canvas {
+            border: 1px dashed salmon;
+        }
+    </style>
+</head>
+<body>
+    <canvas width="512" height="512"></canvas>
+    <script>
+        const canvas = document.querySelector('canvas');
+        const ctx = canvas.getContext('2d');
+        const {width, height} = canvas;
+        ctx.translate(0.5 * width, 0.5 * height);
+        ctx.scale(1, -1);
+
+        
+        const TAU_SEGMENTS = 60;
+        const TAU = Math.PI * 2;
+        
+        function ellipse(x0, y0, radiusX, radiusY, startAng = 0, endAng = Math.PI * 2) {
+            const ang = Math.min(TAU, endAng - startAng);
+            const ret = ang === TAU ? [] : [[x0, y0]];
+            const segments = Math.round(TAU_SEGMENTS * ang / TAU);
+            for(let i = 0; i <= segments; i++) {
+                const x = x0 + radiusX * Math.cos(startAng + ang * i / segments);
+                const y = y0 + radiusY * Math.sin(startAng + ang * i / segments);
+                ret.push([x, y]);
+            }
+            return ret;
+        }
+
+        function draw(points, strokeStyle = 'salmon', fillStyle = null) {
+            ctx.strokeStyle = strokeStyle;
+            ctx.beginPath();
+            ctx.moveTo(...points[0]);
+            for(let i = 1; i < points.length; i++) {
+                ctx.lineTo(...points[i]);
+            }
+            ctx.closePath();
+            if(fillStyle) {
+                ctx.fillStyle = fillStyle;
+                ctx.fill();
+            }
+            ctx.stroke();
+        }
+
+        draw(ellipse(0, 0, 100, 50));
+    </script>
+</body>
+</html>
