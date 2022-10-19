@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSS 的仿射变换</title>
+    <style>
+        .test-box {
+            display: flex;
+            justify-content: space-around;
+        }
+
+        .box {
+            width: 100px;
+            height: 100px;
+            background-color: salmon;
+        }
+
+        .box2 {
+            transform: rotate(30deg) translate(100px, 50px) scale(1.5);
+        }
+    </style>
+</head>
+
+<body>
+    <h1>kaimo 测试 CSS 的仿射变换</h1>
+    <div class="test-box">
+        <div>
+            <h3>原本的div</h3>
+            <div class="box box1"></div>
+        </div>
+        <div>
+            <h3> 旋转、平移、放大的div</h3>
+            <div class="box box2"></div>
+        </div>
+        <div>
+            <h3>矩阵变换后的div</h3>
+            <div class="box box3"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { multiply } from './common/lib/math/functions/Mat3Func.js';
+
+        const rad = Math.PI / 6;
+        const a = [
+            Math.cos(rad), -Math.sin(rad), 0,
+            Math.sin(rad), Math.cos(rad), 0,
+            0, 0, 1
+        ];
+
+        const b = [
+            1, 0, 100,
+            0, 1, 50,
+            0, 0, 1
+        ];
+
+        const c = [
+            1.5, 0, 0,
+            0, 1.5, 0,
+            0, 0, 1
+        ];
+
+        const res = [a, b, c].reduce((a, b) => {
+            return multiply([], b, a);
+        });
+
+        console.log(res);
+
+        // [
+        //     1.299038105676658, -0.7499999999999999, 61.60254037844388,
+        //     0.7499999999999999, 1.299038105676658, 93.30127018922192,
+        //     0, 0, 1
+        // ]
+        let mat = [res[0], res[3], res[1], res[4], res[2], res[5]];
+        document.querySelector(".box3").style.transform = `matrix(${[mat]})`;
+    </script>
+</body>
+
+</html>
