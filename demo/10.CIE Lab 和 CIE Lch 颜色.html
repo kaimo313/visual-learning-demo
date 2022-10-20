@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>CIE Lab 和 CIE Lch 颜色</title>
+        <script src="https://d3js.org/d3-color.v1.min.js"></script>
+        <style>
+            canvas {
+                border: 1px dashed salmon;
+            }
+        </style>
+    </head>
+    <body>
+        <canvas width="512" height="512"></canvas>
+        <script type="module">
+            const canvas = document.querySelector("canvas");
+            const ctx = canvas.getContext("2d");
+
+            ctx.translate(256, 256);
+            ctx.scale(1, -1);
+
+            // 使用 d3.lab().rgb() 获取到rgb的值
+            for (let i = 0; i < 20; i++) {
+                const c = d3.lab(30, i * 15 - 150, i * 15 - 150).rgb();
+                ctx.fillStyle = `rgb(${c.r}, ${c.g}, ${c.b})`;
+                ctx.beginPath();
+                ctx.arc((i - 10) * 20, 60, 10, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            for (let i = 0; i < 20; i++) {
+                const c = d3.lab(i * 5, 80, 80).rgb();
+                ctx.fillStyle = `rgb(${c.r}, ${c.g}, ${c.b})`;
+                ctx.beginPath();
+                ctx.arc((i - 10) * 20, -60, 10, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        </script>
+    </body>
+</html>

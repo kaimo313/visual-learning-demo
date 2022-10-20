@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>RGB(A) 颜色表示法的局限性</title>
+        <style>
+            canvas {
+                border: 1px dashed salmon;
+            }
+        </style>
+    </head>
+    <body>
+        <canvas width="512" height="512"></canvas>
+        <script type="module">
+            import { Vec3 } from "./common/lib/math/vec3.js";
+            const canvas = document.querySelector("canvas");
+            const ctx = canvas.getContext("2d");
+
+            // 生成随机的三维向量
+            function randomRGB() {
+                return new Vec3(
+                    0.5 * Math.random(),
+                    0.5 * Math.random(),
+                    0.5 * Math.random()
+                );
+            }
+
+            ctx.translate(256, 256);
+            ctx.scale(1, -1);
+
+            // 转成 RGB 颜色
+            for (let i = 0; i < 3; i++) {
+                const colorVector = randomRGB();
+                for (let j = 0; j < 5; j++) {
+                    // 依次用 0.5、0.75、1.0、1.25 和 1.5 的比率乘上随机生成的 RGB 数值，一组圆就能呈现不同的亮度
+                    const c = colorVector.clone().scale(0.5 + 0.25 * j);
+                    ctx.fillStyle = `rgb(
+                        ${Math.floor(c[0] * 256)},
+                        ${Math.floor(c[1] * 256)},
+                        ${Math.floor(c[2] * 256)})
+                    `;
+                    ctx.beginPath();
+                    ctx.arc((j - 2) * 60, (i - 1) * 60, 20, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+            
+        </script>
+    </body>
+</html>

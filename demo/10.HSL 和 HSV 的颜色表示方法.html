@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>HSL 和 HSV 的颜色表示方法</title>
+        <style>
+            canvas {
+                border: 1px dashed salmon;
+            }
+        </style>
+    </head>
+    <body>
+        <canvas width="512" height="512"></canvas>
+        <script type="module">
+            import { Vec3 } from "./common/lib/math/vec3.js";
+            const canvas = document.querySelector("canvas");
+            const ctx = canvas.getContext("2d");
+
+            // 生成随机的三维向量
+            function randomColor() {
+                return new Vec3(
+                    0.5 * Math.random(), // 初始色相随机取0~0.5之间的值
+                    0.7, // 初始饱和度0.7
+                    0.45 // 初始亮度0.45
+                );
+            }
+
+            ctx.translate(256, 256);
+            ctx.scale(1, -1);
+
+            // 生成随机 hsl
+            const [h, s, l] = randomColor();
+            for (let i = 0; i < 3; i++) {
+                const p = (i * 0.25 + h) % 1;
+                for (let j = 0; j < 5; j++) {
+                    const d = j - 2;
+                    // 根据 HSL 的规则，亮度越高，颜色越接近白色，只有同时提升饱和度，才能确保圆的颜色不会太浅。
+                    ctx.fillStyle = `hsl(
+                        ${Math.floor(p * 360)}, 
+                        ${Math.floor((0.15 * d + s) * 100)}%, 
+                        ${Math.floor((0.12 * d + l) * 100)}%)
+                    `;
+                    ctx.beginPath();
+                    ctx.arc((j - 2) * 60, (i - 1) * 60, 20, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+        </script>
+    </body>
+</html>

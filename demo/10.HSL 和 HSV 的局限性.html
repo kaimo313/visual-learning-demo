@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>HSL 和 HSV 的局限性</title>
+        <style>
+            canvas {
+                border: 1px dashed salmon;
+            }
+        </style>
+    </head>
+    <body>
+        <canvas width="512" height="512"></canvas>
+        <script type="module">
+            const canvas = document.querySelector("canvas");
+            const ctx = canvas.getContext("2d");
+
+            ctx.translate(256, 256);
+            ctx.scale(1, -1);
+
+            // 第一排每个圆的色相间隔都是 15，饱和度和亮度都是 50%
+            for (let i = 0; i < 20; i++) {
+                ctx.fillStyle = `hsl(${Math.floor(i * 15)}, 50%, 50%)`;
+                ctx.beginPath();
+                ctx.arc((i - 10) * 20, 60, 10, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // 第二排圆的颜色在色相 60 和 210 附近两两交错，饱和度和亮度都是 50%
+            for (let i = 0; i < 20; i++) {
+                ctx.fillStyle = `hsl(${Math.floor(
+                    (i % 2 ? 60 : 210) + 3 * i
+                )}, 50%, 50%)`;
+                ctx.beginPath();
+                ctx.arc((i - 10) * 20, -60, 10, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        </script>
+    </body>
+</html>
