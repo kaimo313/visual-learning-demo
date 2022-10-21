@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>使用 Shader 来绘制重复图案</title>
+        <style>
+            canvas {
+                border: 1px dashed salmon;
+            }
+        </style>
+    </head>
+    <body>
+        <canvas width="512" height="512"></canvas>
+        <script src="./common/lib/gl-renderer.js"></script>
+        <script type="module">
+            const canvas = document.querySelector('canvas');
+            // 这里使用基础库 gl-renderer 库，它在 WebGL 底层的基础上进行了一些简单的封装
+            const renderer = new GlRenderer(canvas);
+            console.log(renderer);
+            // 顶点着色器
+            const vertex = `
+                attribute vec2 a_vertexPosition;
+                attribute vec2 uv;
+                varying vec2 vUv;
+
+                void main() {
+                    gl_PointSize = 1.0;
+                    vUv = uv;
+                    gl_Position = vec4(a_vertexPosition, 1, 1);
+                }
+            `;
+            /**
+             * 片元着色器：渲染过程
+             *      1、获得重复的 rows 行 rows 列的值 st
+             *          fract：用来获取一个数的小数部分
+             *          vUv：由顶点着色器传来的 uv 属性（纹理坐标）乘上 rows 值
+             * */ 
+            const fragment = `
+                #ifdef GL_ES
+                precision mediump float;
+                #endif
+                varying vec2 vUv;
+                uniform float rows;
+
+                void main() {
+                    vec2 st = fract(vUv * rows);
+                    float d1 = step(st.x, 0.9);
+                    float d2 = step(0.1, st.y);
+                    gl_FragColor.rgb = mix(vec3(0.8), vec3(1.0), d1 * d2);
+                    gl_FragColor.a = 1.0;
+                }    
+            `;
+
+            // 加载片元着色器并创建程序
+            const program = renderer.compileSync(fragment, vertex);
+            renderer.useProgram(program);
+
+            // 设置 uniform 变量，rows：表示每一行显示多少个网格。
+            renderer.uniforms.rows = 64;
+            // 将顶点数据送入缓冲区
+            renderer.setMeshData([{
+                // positions：顶点，这四个顶点坐标正好覆盖了整个 Canvas 画布
+                positions: [
+                    [-1, -1],
+                    [-1, 1],
+                    [1, 1],
+                    [1, -1],
+                ],
+                attributes: {
+                    // uv：纹理坐标，这个坐标系的左下角为 0,0，右上角为 1,1
+                    uv: [
+                        [0, 0],
+                        [0, 1],
+                        [1, 1],
+                        [1, 0],
+                    ],
+                },
+                // cells：顶点索引，这个矩形画布剖分成两个三角形，顶点下标分别是 (0, 1, 2) 和 (2, 0, 3)。
+                cells: [[0, 1, 2], [2, 0, 3]],
+            }]);
+
+            // 渲染
+            renderer.render();
+        </script>
+    </body>
+</html>

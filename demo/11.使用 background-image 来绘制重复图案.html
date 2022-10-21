@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>使用 background-image 来绘制重复图案</title>
+    <style>
+        canvas {
+            border: 1px dashed salmon;
+            background-image: linear-gradient(to right, transparent 90%, #ccc 0),
+                linear-gradient(to bottom, transparent 90%, #ccc 0);
+            background-size: 8px 8px, 8px 8px;
+        }
+    </style>
+</head>
+<body>
+    <canvas width="512" height="512"></canvas>
+</body>
+</html>
