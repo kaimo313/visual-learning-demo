@@ -36,6 +36,10 @@
              *      1、获得重复的 rows 行 rows 列的值 st
              *          fract：用来获取一个数的小数部分
              *          vUv：由顶点着色器传来的 uv 属性（纹理坐标）乘上 rows 值
+             *      2、step 函数是 Shader 中另一个很常用的函数，它就是一个阶梯函数。
+             *          它的原理是：当 step(a, b) 中的 b < a 时，返回 0；当 b >= a 时，返回 1。
+             *      3、mix 是线性插值函数，mix(a, b, c) 表示根据 c 是 0 或 1，返回 a 或者 b。
+             *          vec3(1.0)是白色，vec3(0.8)是灰色
              * */ 
             const fragment = `
                 #ifdef GL_ES
@@ -50,7 +54,7 @@
                     float d2 = step(0.1, st.y);
                     gl_FragColor.rgb = mix(vec3(0.8), vec3(1.0), d1 * d2);
                     gl_FragColor.a = 1.0;
-                }    
+                }
             `;
 
             // 加载片元着色器并创建程序
