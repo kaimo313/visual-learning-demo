@@ -31,7 +31,7 @@
                     gl_Position = vec4(a_vertexPosition, 1, 1);
                 }
             `;
-
+            // 曼德勃罗特集是无限迭代的，给一个足够精度的最大迭代次数，比如：65536
             const fragment = `
                 #ifdef GL_ES
                 precision mediump float;
