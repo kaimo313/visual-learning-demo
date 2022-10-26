@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>灰度化图片</title>
+    </head>
+    <body>
+        <canvas id="paper" width="0" height="0"></canvas>
+        <script type="module">
+            import {
+                loadImage,
+                getImageData,
+                traverse,
+            } from "./common/lib/util.js";
+
+            const canvas = document.getElementById("paper");
+            const context = canvas.getContext("2d");
+
+            (async function () {
+                // 异步加载图片
+                const img = await loadImage(
+                    "https://images.unsplash.com/photo-1666552982368-dd0e2bb96993?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2070&q=80"
+                );
+                // 获取图片的 imageData 数据对象
+                const imageData = getImageData(img);
+                console.log("imageData---->", imageData);
+                // 遍历 imageData 数据对象：traverse 函数会自动遍历图片的每个像素点，把获得的像素信息传给参数中的回调函数处理
+                traverse(imageData, ({ r, g, b, a }) => {
+                    // 对每个像素进行灰度化处理
+                    const v = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+                    return [v, v, v, a];
+                });
+                // 更新canvas内容
+                canvas.width = imageData.width;
+                canvas.height = imageData.height;
+                // 将数据从已有的 ImageData 对象绘制到位图
+                context.putImageData(imageData, 0, 0);
+            })();
+        </script>
+    </body>
+</html>

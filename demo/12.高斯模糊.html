@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>高斯模糊</title>
+    </head>
+    <body>
+        <img
+            src="https://images.unsplash.com/photo-1666552982368-dd0e2bb96993?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2070&q=80"
+            alt=""
+        />
+        <canvas id="paper" width="0" height="0"></canvas>
+        <script type="module">
+            import {
+                loadImage,
+                getImageData,
+                gaussianBlur,
+            } from "./common/lib/util.js";
+
+            const canvas = document.getElementById("paper");
+            const context = canvas.getContext("2d");
+
+            (async function () {
+                // 异步加载图片
+                const img = await loadImage("https://images.unsplash.com/photo-1666552982368-dd0e2bb96993?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2070&q=80");
+                // 获取图片的 imageData 数据对象
+                const imageData = getImageData(img);
+                const { width, height, data } = imageData;
+                // 对imageData应用高斯模糊：整体对图片所有像素应用高斯模糊函数。
+                gaussianBlur(data, width, height, 30, 10);
+                // 更新canvas内容
+                canvas.width = imageData.width;
+                canvas.height = imageData.height;
+                // 将数据从已有的 ImageData 对象绘制到位图
+                context.putImageData(imageData, 0, 0);
+            })();
+        </script>
+    </body>
+</html>
