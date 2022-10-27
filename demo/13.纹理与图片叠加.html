@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>纹理与图片叠加</title>
+    </head>
+    <body>
+        <img
+            src="./assets/img/flower.jpg"
+            alt=""
+        />
+        <canvas id="paper" width="0" height="0"></canvas>
+        <script type="module">
+            import {
+                loadImage,
+                getImageData,
+                traverse,
+                getPixel,
+            } from "./common/lib/util.js";
+            import {
+                transformColor,
+                brightness,
+                saturate,
+            } from "./common/lib/color-matrix.js";
+
+            const canvas = document.getElementById("paper");
+            const context = canvas.getContext("2d");
+
+            (async function () {
+                // 异步加载图片
+                const img = await loadImage(
+                    "./assets/img/flower.jpg"
+                );
+                // 阳光效果图
+                const sunlight = await loadImage(
+                    "./assets/img/sunlight-texture.png"
+                );
+                // 获取图片的 imageData 数据对象
+                const imageData = getImageData(img);
+                console.log("imageData---->", imageData);
+                const texture = getImageData(sunlight);
+                console.log("texture---->", texture);
+                // 遍历 imageData 数据对象：traverse 函数会自动遍历图片的每个像素点，把获得的像素信息传给参数中的回调函数处理
+                traverse(imageData, ({ r, g, b, a, index }) => {
+                    const texColor = getPixel(texture, index);
+                    return transformColor(
+                        [r, g, b, a],
+                        brightness(1 + 0.7 * texColor[3]),
+                        saturate(2 - texColor[3])
+                    );
+                });
+                // 更新canvas内容
+                canvas.width = imageData.width;
+                canvas.height = imageData.height;
+                // 将数据从已有的 ImageData 对象绘制到位图
+                context.putImageData(imageData, 0, 0);
+            })();
+        </script>
+    </body>
+</html>
