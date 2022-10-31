@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>片元着色器绘制圆</title>
+        <style>
+            canvas {
+                border: 1px dashed salmon;
+            }
+        </style>
+    </head>
+    <body>
+        <canvas width="512" height="512"></canvas>
+        <script src="./common/lib/gl-renderer.js"></script>
+        <script>
+            const vertex = `
+                attribute vec2 a_vertexPosition;
+                attribute vec2 uv;
+
+                varying vec2 vUv;
+
+                void main() {
+                    gl_PointSize = 1.0;
+                    vUv = uv;
+                    gl_Position = vec4(a_vertexPosition, 1, 1);
+                }
+            `;
+            // // 模糊的圆
+            // const fragment = `
+            //     #ifdef GL_ES
+            //     precision highp float;
+            //     #endif
+
+            //     varying vec2 vUv;
+
+            //     void main() {
+            //         float d = distance(vUv, vec2(0.5));
+            //         gl_FragColor.rgb = d * vec3(1.0);
+            //         gl_FragColor.a = 1.0;
+            //     }
+            // `;
+
+            // // 清晰的圆
+            // const fragment = `
+            //     #ifdef GL_ES
+            //     precision highp float;
+            //     #endif
+
+            //     varying vec2 vUv;
+
+            //     void main() {
+            //         float d = distance(vUv, vec2(0.5));
+            //         gl_FragColor.rgb = step(d, 0.2) * vec3(1.0);
+            //         gl_FragColor.a = 1.0;
+            //     }
+            // `;
+            // 清晰的圆无锯齿
+            const fragment = `
+                #ifdef GL_ES
+                precision highp float;
+                #endif
+
+                varying vec2 vUv;
+
+                void main() {
+                    float d = distance(vUv, vec2(0.5));
+                    gl_FragColor.rgb = smoothstep(d, d + 0.01, 0.2) * vec3(1.0);
+                    gl_FragColor.a = 1.0;
+                }
+            `;
+
+            const canvas = document.querySelector("canvas");
+            const renderer = new GlRenderer(canvas);
+
+            // 加载片元着色器并创建程序
+            const program = renderer.compileSync(fragment, vertex);
+            renderer.useProgram(program);
+
+            // 将顶点数据送入缓冲区
+            renderer.setMeshData([
+                {
+                    positions: [
+                        [-1, -1],
+                        [-1, 1],
+                        [1, 1],
+                        [1, -1],
+                    ],
+                    attributes: {
+                        uv: [
+                            [0, 0],
+                            [0, 1],
+                            [1, 1],
+                            [1, 0],
+                        ],
+                    },
+                    cells: [
+                        [0, 1, 2],
+                        [2, 0, 3],
+                    ],
+                },
+            ]);
+            
+            // 渲染
+            renderer.render();
+        </script>
+    </body>
+</html>
