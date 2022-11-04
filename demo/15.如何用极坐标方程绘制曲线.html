@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>如何用极坐标方程绘制曲线</title>
+        <style>
+            canvas {
+                border: 1px dashed salmon;
+            }
+        </style>
+    </head>
+    <body>
+        <canvas width="512" height="512"></canvas>
+        <script type="module">
+            import { parametric } from "./common/lib/parametric.js";
+
+            const canvas = document.querySelector("canvas");
+            const ctx = canvas.getContext("2d");
+            const { width, height } = canvas;
+            const w = 0.5 * width,
+                h = 0.5 * height;
+            ctx.translate(w, h);
+            ctx.scale(1, -1);
+
+            function drawAxis() {
+                ctx.save();
+                ctx.strokeStyle = "#ccc";
+                ctx.beginPath();
+                ctx.moveTo(-w, 0);
+                ctx.lineTo(w, 0);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(0, -h);
+                ctx.lineTo(0, h);
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            drawAxis();
+
+            // fromPolar 作为 parametric 的参数是坐标映射函数，通过它可以将任意坐标映射为直角坐标
+            const fromPolar = (r, theta) => {
+                return [r * Math.cos(theta), r * Math.sin(theta)];
+            };
+
+            // 画一个半径为 200 的半圆
+            const arc = parametric(
+                (t) => 200,
+                (t) => t,
+                fromPolar
+            );
+            arc(0, Math.PI).draw(ctx);
+
+            // 玫瑰线
+            const rose = parametric(
+                (t, a, k) => a * Math.cos(k * t),
+                (t) => t,
+                fromPolar
+            );
+            rose(0, Math.PI, 100, 200, 5).draw(ctx, { strokeStyle: "blue" });
+
+            // 心形线
+            const heart = parametric(
+                (t, a) => a - a * Math.sin(t),
+                (t) => t,
+                fromPolar
+            );
+            heart(0, 2 * Math.PI, 100, 100).draw(ctx, { strokeStyle: "red" });
+
+            // 双纽线
+            const foliumRight = parametric(
+                (t, a) => Math.sqrt(2 * a ** 2 * Math.cos(2 * t)),
+                (t) => t,
+                fromPolar
+            );
+            const foliumLeft = parametric(
+                (t, a) => -Math.sqrt(2 * a ** 2 * Math.cos(2 * t)),
+                (t) => t,
+                fromPolar
+            );
+            foliumRight(-Math.PI / 4, Math.PI / 4, 100, 100).draw(ctx, {
+                strokeStyle: "green",
+            });
+            foliumLeft(-Math.PI / 4, Math.PI / 4, 100, 100).draw(ctx, {
+                strokeStyle: "green",
+            });
+        </script>
+    </body>
+</html>

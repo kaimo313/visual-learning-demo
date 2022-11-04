@@ -18,7 +18,7 @@ function draw(
     context.stroke();
 }
 
-// 导出高阶函数绘图模块
+// 导出高阶函数绘图模块：zFunc是坐标映射函数，通过它可以将任意坐标映射为直角坐标
 export function parametric(xFunc, yFunc, zFunc) {
     /**
      * start、end 表示参数方程中关键参数范围的参数
