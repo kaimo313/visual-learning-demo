@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>如何实现噪声函数</title>
+        <style>
+            canvas {
+                border: 1px dashed salmon;
+            }
+        </style>
+    </head>
+    <body>
+        <canvas width="512" height="512"></canvas>
+        <script src="./common/lib/gl-renderer.js"></script>
+        <script>
+            const vertex = `
+                attribute vec2 a_vertexPosition;
+                attribute vec2 uv;
+
+                varying vec2 vUv;
+
+                void main() {
+                    gl_PointSize = 1.0;
+                    vUv = uv;
+                    gl_Position = vec4(a_vertexPosition, 1, 1);
+                }
+            `;
+
+            const fragment = `
+                #ifdef GL_ES
+                precision highp float;
+                #endif
+
+                varying vec2 vUv;
+
+                // 随机函数
+                float random (float x) {
+                    return fract(sin(x * 1243758.5453123));
+                }
+
+                void main() {
+                    vec2 st = vUv - vec2(0.5);
+                    st *= 10.0;
+                    float i = floor(st.x);
+                    float f = fract(st.x);
+                    
+                    // d直接等于随机函数返回值，这样d不连续
+                    // float d = random(i);
+                    // 线段的首尾就会连起来，得到一段连续的折线。
+                    // float d = mix(random(i), random(i + 1.0), f);
+                    // 下面两种都得到一条连续并且平滑的曲线
+                    // float d = mix(random(i), random(i + 1.0), smoothstep(0.0, 1.0, f));
+                    float d = mix(random(i), random(i + 1.0), f * f * (3.0 - 2.0 * f));
+                    
+                    gl_FragColor.rgb = (smoothstep(st.y - 0.05, st.y, d) - smoothstep(st.y, st.y + 0.05, d)) * vec3(1.0);
+                    gl_FragColor.a = 1.0;
+                }
+            `;
+
+            const canvas = document.querySelector("canvas");
+            const renderer = new GlRenderer(canvas);
+            const program = renderer.compileSync(fragment, vertex);
+            renderer.useProgram(program);
+
+            renderer.setMeshData([
+                {
+                    positions: [
+                        [-1, -1],
+                        [-1, 1],
+                        [1, 1],
+                        [1, -1],
+                    ],
+                    attributes: {
+                        uv: [
+                            [0, 0],
+                            [0, 1],
+                            [1, 1],
+                            [1, 0],
+                        ],
+                    },
+                    cells: [
+                        [0, 1, 2],
+                        [2, 0, 3],
+                    ],
+                },
+            ]);
+
+            renderer.render();
+        </script>
+    </body>
+</html>
