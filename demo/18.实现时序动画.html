@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>实现时序动画</title>
+        <style>
+            .block {
+                width: 100px;
+                height: 100px;
+                top: 100px;
+                left: 100px;
+                transform-origin: 50% 50%;
+                position: absolute;
+                background: salmon;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="block"></div>
+        <script>
+            const block = document.querySelector(".block");
+            const startAngle = 0; // 起始旋转角度
+            const T = 2000; // 旋转周期
+            let startTime = null; // 初始旋转的时间
+            function update() {
+                startTime = startTime == null ? Date.now() : startTime;
+                const p = (Date.now() - startTime) / T; // 旋转进度 = 当前经过的时间 / 旋转周期
+                const angle = startAngle + p * 360; // 当前角度
+                block.style.transform = `rotate(${angle}deg)`;
+                requestAnimationFrame(update);
+            }
+            update();
+        </script>
+    </body>
+</html>

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>贝塞尔曲线缓动</title>
+        <style>
+            .block {
+                position: relative;
+                width: 100px;
+                height: 100px;
+                background: salmon;
+            }
+            .block2 {
+                position: relative;
+                width: 100px;
+                height: 100px;
+                background: seagreen;
+            }
+            .block3 {
+                position: relative;
+                width: 100px;
+                height: 100px;
+                background: slateblue;
+            }
+        </style>
+    </head>
+    <body>
+        <h2>匀速</h2>
+        <div class="block"></div>
+        <h2>加了缓动函数，匀加速</h2>
+        <div class="block2"></div>
+        <h2>贝塞尔曲线缓动</h2>
+        <div class="block3"></div>
+        <script src="./common/lib/animator/bezier-easing.js"></script>
+        <script type="module">
+            import { Animator } from "./common/lib/animator/index.js";
+            const block = document.querySelector(".block");
+            const animator = new Animator({
+                duration: 3000
+            });
+            const block2 = document.querySelector(".block2");
+            const animator2 = new Animator({
+                duration: 3000,
+                easing: p => p ** 2
+            });
+            const block3 = document.querySelector(".block3");
+            // 使用 easeInOutExpo (0.87, 0, 0.13, 1) 效果 https://easings.net/#easeInOutExpo
+            const animator3 = new Animator({
+                duration: 3000,
+                easing: BezierEasing(0.87, 0, 0.13, 1)
+            });
+            document.addEventListener('click', () => {
+                animator.animate({
+                    el: block,
+                    start: 0,
+                    end: 400
+                }, ({
+                    target: { el, start, end },
+                    timing: { p }
+                }) => {
+                    // 线性插值方法
+                    console.log("animator--->p", p)
+                    const left = start * (1 - p) + end * p;
+                    el.style.left = `${left}px`;
+                });
+                animator2.animate({
+                    el: block2,
+                    start: 0,
+                    end: 400
+                }, ({
+                    target: { el, start, end },
+                    timing: { p }
+                }) => {
+                    // 线性插值方法
+                    console.log("animator2--->p", p)
+                    const left = start * (1 - p) + end * p;
+                    el.style.left = `${left}px`;
+                });
+                animator3.animate({
+                    el: block3,
+                    start: 0,
+                    end: 400
+                }, ({
+                    target: { el, start, end },
+                    timing: { p }
+                }) => {
+                    // 线性插值方法
+                    console.log("animator3--->p", p)
+                    const left = start * (1 - p) + end * p;
+                    el.style.left = `${left}px`;
+                });
+            });
+        </script>
+    </body>
+</html>

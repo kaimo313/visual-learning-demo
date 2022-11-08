@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>插值与缓动函数2</title>
+        <style>
+            .block {
+                position: relative;
+                width: 100px;
+                height: 100px;
+                background: salmon;
+            }
+            .block2 {
+                position: relative;
+                width: 100px;
+                height: 100px;
+                background: seagreen;
+            }
+        </style>
+    </head>
+    <body>
+        <h2>匀速</h2>
+        <div class="block"></div>
+        <h2>加了缓动函数，匀加速</h2>
+        <div class="block2"></div>
+        <script type="module">
+            import { Animator } from "./common/lib/animator/index.js";
+            const block = document.querySelector(".block");
+            const animator = new Animator({
+                duration: 3000
+            });
+            const block2 = document.querySelector(".block2");
+            const animator2 = new Animator({
+                duration: 3000,
+                easing: p => p ** 2
+            });
+            document.addEventListener('click', () => {
+                animator.animate({
+                    el: block,
+                    start: 0,
+                    end: 400
+                }, ({
+                    target: { el, start, end },
+                    timing: { p }
+                }) => {
+                    // 线性插值方法
+                    console.log("animator--->p", p)
+                    const left = start * (1 - p) + end * p;
+                    el.style.left = `${left}px`;
+                });
+                animator2.animate({
+                    el: block2,
+                    start: 0,
+                    end: 400
+                }, ({
+                    target: { el, start, end },
+                    timing: { p }
+                }) => {
+                    // 线性插值方法
+                    console.log("animator2--->p", p)
+                    const left = start * (1 - p) + end * p;
+                    el.style.left = `${left}px`;
+                });
+            });
+        </script>
+    </body>
+</html>
