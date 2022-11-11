@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>如何用 WebGL 绘制圆柱体</title>
+        <style>
+            canvas {
+                border: 1px dashed rgb(250, 128, 114);
+            }
+        </style>
+    </head>
+    <body>
+        <canvas width="512" height="512"></canvas>
+        <script src="./common/lib/gl-renderer.js"></script>
+        <script type="module">
+            import { multiply } from './common/lib/math/functions/Mat4Func.js';
+
+            const vertex = `
+                attribute vec3 a_vertexPosition;
+                attribute vec4 color;
+
+                varying vec4 vColor;
+                uniform mat4 projectionMatrix;
+                uniform mat4 modelMatrix;
+                
+                void main() {
+                    gl_PointSize = 1.0;
+                    vColor = color;
+                    gl_Position = projectionMatrix * modelMatrix * vec4(a_vertexPosition, 1.0);
+                }
+            `;
+
+            const fragment = `
+                #ifdef GL_ES
+                precision highp float;
+                #endif
+
+                varying vec4 vColor;
+
+                void main() {
+                    gl_FragColor = vColor;
+                }
+            `;
+
+            const canvas = document.querySelector("canvas");
+            // 开启深度检测
+            const renderer = new GlRenderer(canvas, {
+                depth: true
+            });
+            const program = renderer.compileSync(fragment, vertex);
+            renderer.useProgram(program);
+
+            function cylinder(radius = 1.0, height = 1.0, segments = 30, colorCap = [0, 0, 1, 1], colorSide = [1, 0, 0, 1]) {
+                const positions = [];
+                const cells = [];
+                const color = [];
+                const cap = [[0, 0]];
+                const h = 0.5 * height;
+
+                // 顶和底的圆
+                for(let i = 0; i <= segments; i++) {
+                    const theta = Math.PI * 2 * i / segments;
+                    const p = [radius * Math.cos(theta), radius * Math.sin(theta)];
+                    cap.push(p);
+                }
+
+                positions.push(...cap.map(([x, y]) => [x, y, -h]));
+                for(let i = 1; i < cap.length - 1; i++) {
+                    cells.push([0, i, i + 1]);
+                }
+                cells.push([0, cap.length - 1, 1]);
+
+                let offset = positions.length;
+                positions.push(...cap.map(([x, y]) => [x, y, h]));
+                for(let i = 1; i < cap.length - 1; i++) {
+                    cells.push([offset, offset + i, offset + i + 1]);
+                }
+                cells.push([offset, offset + cap.length - 1, offset + 1]);
+
+                color.push(...positions.map(() => colorCap));
+
+                // 侧面
+                offset = positions.length;
+                for(let i = 1; i < cap.length; i++) {
+                    const a = [...cap[i], h];
+                    const b = [...cap[i], -h];
+                    const nextIdx = i < cap.length - 1 ? i + 1 : 1;
+                    const c = [...cap[nextIdx], -h];
+                    const d = [...cap[nextIdx], h];
+
+                    positions.push(a, b, c, d);
+                    color.push(colorSide, colorSide, colorSide, colorSide);
+                    cells.push([offset, offset + 1, offset + 2], [offset, offset + 2, offset + 3]);
+                    offset += 4;
+                }
+
+                return { positions, cells, color };
+            }
+
+            const geometry = cylinder(0.2, 1.0, 400,
+                [250/255, 128/255, 114/255, 1], // salmon rgb(250 128 114)
+                [46/255, 139/255, 87/255, 1], // seagreen rgb(46 139 87)
+            );
+
+            // 将 z 轴坐标方向反转，对应的齐次矩阵如下，转换坐标的齐次矩阵，又被称为投影矩阵（ProjectionMatrix）
+            renderer.uniforms.projectionMatrix = [
+                1, 0, 0, 0,
+                0, 1, 0, 0,
+                0, 0, -1, 0,
+                0, 0, 0, 1,
+            ];
+
+            function fromRotation(rotationX, rotationY, rotationZ) {
+                let c = Math.cos(rotationX);
+                let s = Math.sin(rotationX);
+                const rx = [
+                    1, 0, 0, 0,
+                    0, c, s, 0,
+                    0, -s, c, 0,
+                    0, 0, 0, 1,
+                ];
+
+                c = Math.cos(rotationY);
+                s = Math.sin(rotationY);
+                const ry = [
+                    c, 0, s, 0,
+                    0, 1, 0, 0,
+                    -s, 0, c, 0,
+                    0, 0, 0, 1,
+                ];
+
+                c = Math.cos(rotationZ);
+                s = Math.sin(rotationZ);
+                const rz = [
+                    c, s, 0, 0,
+                    -s, c, 0, 0,
+                    0, 0, 1, 0,
+                    0, 0, 0, 1,
+                ];
+
+                const ret = [];
+                multiply(ret, rx, ry);
+                multiply(ret, ret, rz);
+
+                return ret;
+            }
+
+            renderer.setMeshData([
+                {
+                    positions: geometry.positions,
+                    attributes: {
+                        color: geometry.color,
+                    },
+                    cells: geometry.cells,
+                },
+            ]);
+
+            let rotationX = 0;
+            let rotationY = 0;
+            let rotationZ = 0;
+            function update() {
+                rotationX += 0.003;
+                rotationY += 0.005;
+                rotationZ += 0.007;
+                renderer.uniforms.modelMatrix = fromRotation(rotationX, rotationY, rotationZ);
+                requestAnimationFrame(update);
+            }
+            update();
+
+            renderer.render();
+        </script>
+    </body>
+</html>
