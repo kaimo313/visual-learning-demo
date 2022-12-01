@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>用四元数让飞机沿着某个轴旋转</title>
+        <style>
+            canvas {
+                border: 1px dashed #fa8072;
+            }
+        </style>
+    </head>
+    <body>
+        <canvas width="512" height="512"></canvas>
+        <script type="module">
+            import { Renderer, Camera, Transform, Geometry, Texture, Orbit, Program, Mesh, Polyline } from './common/lib/ogl/index.mjs';
+            import { Vec3 } from "./common/lib/math/vec3.js";
+            import { Quat } from "./common/lib/math/Quat.js";
+            import { Color } from "./common/lib/math/Color.js";
+            // JavaScript Controller Library
+            import * as dat from './common/lib/dat.gui.js';
+            console.log(dat)
+
+            const canvas = document.querySelector('canvas');
+            const renderer = new Renderer({
+                canvas,
+                width: 512,
+                height: 512,
+            });
+
+            const gl = renderer.gl;
+            gl.clearColor(1, 1, 1, 1);
+            const camera = new Camera(gl, {fov: 35});
+            camera.position.set(0, 0, 10);
+            camera.lookAt([0, 0, 0]);
+
+            const scene = new Transform();
+
+            const vertex = `
+                precision highp float;
+
+                attribute vec3 position;
+                attribute vec3 normal;
+                attribute vec2 uv;
+
+                uniform mat4 modelViewMatrix;
+                uniform mat4 projectionMatrix;
+
+                varying vec2 vUv;
+
+                void main() {
+                    vUv = uv;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            `;
+
+            const fragment = `
+                precision highp float;
+
+                uniform sampler2D tMap;
+                varying vec2 vUv;
+
+                void main() {
+                    gl_FragColor = texture2D(tMap, vUv);
+                }
+            `;
+
+            // 加载模型
+            async function loadModel(src) {
+                const data = await (await fetch(src)).json();
+                // 创建 Geometry 对象，并返回这个对象
+                const geometry = new Geometry(gl, {
+                    position: {size: 3, data: new Float32Array(data.position)},
+                    uv: {size: 2, data: new Float32Array(data.uv)},
+                    normal: {size: 3, data: new Float32Array(data.normal)},
+                });
+                return geometry;
+            }
+
+            // 加载纹理
+            function loadTexture(src) {
+                const texture = new Texture(gl);
+                return new Promise((resolve) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        texture.image = img;
+                        resolve(texture);
+                    };
+                    img.src = src;
+                });
+            }
+
+            const controls = new Orbit(camera);
+
+            (async function () {
+                // 加载飞机几何体模型
+                const geometry = await loadModel('./assets/model/airplane.json');
+                // 加载飞机的纹理图片
+                const texture = await loadTexture('./assets/model/airplane.jpg');
+
+                // 渲染部分
+                const program = new Program(gl, {
+                    vertex,
+                    fragment,
+                    uniforms: {
+                        tMap: {value: texture},
+                    },
+                });
+                const mesh = new Mesh(gl, {geometry, program});
+                mesh.setParent(scene);
+
+                // 定义轴，通过 Polyline 对象来绘制轴。
+                const points = [
+                    new Vec3(0, 0, 0),
+                    new Vec3(0, 10, 0),
+                ];
+
+                const axis = new Polyline(gl, {
+                    points,
+                    uniforms: {
+                    uColor: {value: new Color("#fa8072")},
+                    uThickness: {value: 3},
+                    },
+                });
+                axis.mesh.setParent(scene);
+                renderer.render({scene, camera});
+
+                // 添加控制
+                const gui = new dat.GUI();
+                const palette = {
+                    alpha: 0,
+                    x: 0,
+                    y: 1,
+                    z: 0
+                };
+
+                // 更新轴
+                function updateAxis() {
+                    const {x, y, z} = palette;
+                    const v = new Vec3(x, y, z).normalize().scale(10);
+                    points[1].copy(v);
+                    axis.updateGeometry();
+                    renderer.render({scene, camera});
+                }
+
+                // 更新四元数
+                function updateQuaternion(val) {
+                    const theta = 0.5 * val / 180 * Math.PI;
+                    const c = Math.cos(theta);
+                    const s = Math.sin(theta);
+                    const p = new Vec3().copy(points[1]).normalize();
+                    const q = new Quat(p.x * s, p.y * s, p.z * s, c);
+                    mesh.quaternion = q;
+                    renderer.render({scene, camera});
+                }
+                gui.add(palette, 'x', -10, 10).onChange(updateAxis);
+                gui.add(palette, 'y', -10, 10).onChange(updateAxis);
+                gui.add(palette, 'z', -10, 10).onChange(updateAxis);
+                gui.add(palette, 'alpha', -180, 180).onChange(updateQuaternion);
+            }());
+        </script>
+    </body>
+</html>
