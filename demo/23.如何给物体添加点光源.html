@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>如何给物体添加点光源</title>
+        <style>
+            canvas {
+                border: 1px dashed #fa8072;
+            }
+        </style>
+    </head>
+    <body>
+        <canvas width="512" height="512"></canvas>
+        <script type="module">
+            import { Renderer, Camera, Transform, Sphere, Box, Cylinder, Torus, Orbit, Program, Mesh, Color } from './common/lib/ogl/index.mjs';
+            // JavaScript Controller Library
+            import * as dat from './common/lib/dat.gui.js';
+            console.log(dat)
+
+            const canvas = document.querySelector('canvas');
+            const renderer = new Renderer({
+                canvas,
+                width: 512,
+                height: 512,
+            });
+
+            const gl = renderer.gl;
+            gl.clearColor(1, 1, 1, 1);
+            const camera = new Camera(gl, {fov: 35});
+            camera.position.set(0, 0, 10);
+            camera.lookAt([0, 0, 0]);
+
+            const scene = new Transform();
+
+            // 在顶点着色器中，将物体变换后的坐标传给片元着色器
+            const vertex = `
+                precision highp float;
+
+                attribute vec3 position;
+                attribute vec3 normal;
+                uniform mat4 modelViewMatrix;
+                uniform mat4 projectionMatrix;
+                uniform mat3 normalMatrix;
+
+                varying vec3 vNormal;
+                varying vec3 vPos;
+
+                void main() {
+                    vec4 pos = modelViewMatrix * vec4(position, 1.0);
+                    vPos = pos.xyz;
+                    vNormal = normalize(normalMatrix * normal);
+                    gl_Position = projectionMatrix * pos;
+                }
+            `;
+
+            // 传入环境光 ambientLight 和材质反射率 materialReflection
+            // 片元着色器中计算光线方向与法向量夹角的余弦
+            const fragment = `
+                precision highp float;
+
+                uniform vec3 ambientLight;
+                uniform vec3 materialReflection;
+                uniform vec3 pointLightColor;
+                uniform vec3 pointLightPosition;
+                uniform mat4 viewMatrix;
+                uniform vec3 pointLightDecayFactor;
+
+                varying vec3 vNormal;
+                varying vec3 vPos;
+
+                void main() {
+                    // 光线到点坐标的方向
+                    vec3 dir = (viewMatrix * vec4(pointLightPosition, 1.0)).xyz - vPos;
+
+                    // 与法线夹角余弦
+                    float cos = max(dot(normalize(dir), vNormal), 0.0);
+
+                    // 计算漫反射
+                    vec3 diffuse = cos * pointLightColor;
+                    
+                    // 合成颜色
+                    gl_FragColor.rgb = (ambientLight + diffuse) * materialReflection;
+                    gl_FragColor.a = 1.0;
+                }
+            `;
+
+            // 创建四个不同的几何体，初始化它们的环境光 ambientLight 以及材质反射率 materialReflection
+            const sphereGeometry = new Sphere(gl);
+            const cubeGeometry = new Box(gl);
+            const cylinderGeometry = new Cylinder(gl);
+            const torusGeometry = new Torus(gl);
+
+            // 添加一个水平向右的白色平行光
+            const ambientLight = { value: [1, 1, 1] };
+
+            const directional = {
+                pointLightPosition: {
+                    value: [3, 3, 0]
+                },
+                pointLightColor: {
+                    value: [1, 1, 1]
+                }
+            };
+
+            const program1 = new Program(gl, {
+                vertex,
+                fragment,
+                uniforms: {
+                    ambientLight,
+                    materialReflection: {value: [250/255, 128/255, 114/255]},
+                    ...directional
+                },
+            });
+            const program2 = new Program(gl, {
+                vertex,
+                fragment,
+                uniforms: {
+                    ambientLight,
+                    materialReflection: {value: [218/255, 165/255, 32/255]},
+                    ...directional
+                },
+            });
+            const program3 = new Program(gl, {
+                vertex,
+                fragment,
+                uniforms: {
+                    ambientLight,
+                    materialReflection: {value: [46/255, 139/255, 87/255]},
+                    ...directional
+                },
+            });
+            const program4 = new Program(gl, {
+                vertex,
+                fragment,
+                uniforms: {
+                    ambientLight,
+                    materialReflection: {value: [106/255, 90/255, 205/255]},
+                    ...directional
+                },
+            });
+
+            const torus = new Mesh(gl, {geometry: torusGeometry, program: program1});
+            torus.position.set(0, 1.3, 0);
+            torus.setParent(scene);
+
+            const sphere = new Mesh(gl, {geometry: sphereGeometry, program: program2});
+            sphere.position.set(1.3, 0, 0);
+            sphere.setParent(scene);
+
+            const cube = new Mesh(gl, {geometry: cubeGeometry, program: program3});
+            cube.position.set(0, -1.3, 0);
+            cube.setParent(scene);
+
+            const cylinder = new Mesh(gl, {geometry: cylinderGeometry, program: program4});
+            cylinder.position.set(-1.3, 0, 0);
+            cylinder.setParent(scene);
+
+            const controls = new Orbit(camera);
+
+            // 添加动画
+            requestAnimationFrame(update);
+            function update() {
+                requestAnimationFrame(update);
+                controls.update();
+
+                torus.rotation.y -= 0.02;
+                sphere.rotation.y -= 0.03;
+                cube.rotation.y -= 0.04;
+                cylinder.rotation.y -= 0.02;
+
+                renderer.render({scene, camera});
+            }
+
+            // 添加控制
+            const gui = new dat.GUI();
+            const palette = {
+                light: '#FFFFFF',
+                reflection1: '#fa8072', // salmon rgb(250, 128, 114) [250/255, 128/255, 114/255, 1]
+                reflection2: '#daa520', // goldenrod rgb(218, 165, 32) [218/255, 165/255, 32/255, 1]
+                reflection3: '#2e8b57', // seagreen rgb(46, 139, 87) [46/255, 139/255, 87/255, 1]
+                reflection4: '#6a5acd', // slateblue rgb(106, 90, 205) [106/255, 90/255, 205/255, 1]
+            };
+            gui.addColor(palette, 'light').onChange((val) => {
+                const color = new Color(val);
+                program1.uniforms.ambientLight.value = color;
+                program2.uniforms.ambientLight.value = color;
+                program3.uniforms.ambientLight.value = color;
+                program4.uniforms.ambientLight.value = color;
+            });
+            gui.addColor(palette, 'reflection1').onChange((val) => {
+                program1.uniforms.materialReflection.value = new Color(val);
+            });
+            gui.addColor(palette, 'reflection2').onChange((val) => {
+                program2.uniforms.materialReflection.value = new Color(val);
+            });
+            gui.addColor(palette, 'reflection3').onChange((val) => {
+                program3.uniforms.materialReflection.value = new Color(val);
+            });
+            gui.addColor(palette, 'reflection4').onChange((val) => {
+                program4.uniforms.materialReflection.value = new Color(val);
+            });
+        </script>
+    </body>
+</html>
