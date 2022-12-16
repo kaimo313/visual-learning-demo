@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>如何用 Canvas2D 绘制带宽度的曲线</title>
+        <style>
+            canvas {
+                border: 1px dashed #fa8072;
+            }
+        </style>
+    </head>
+    <body>
+        <canvas width="800" height="512"></canvas>
+        <script type="module">
+            // 设置 lineWidth、lingJoin、lineCap，然后根据 points 数据的内容设置绘图指令执行绘制。
+            function drawPolyline(context, points, {lineWidth = 1, lineJoin = 'miter', lineCap = 'butt', miterLimit = 10} = {}) {
+                context.lineWidth = lineWidth;
+                context.lineJoin = lineJoin;
+                context.lineCap = lineCap;
+                // The CanvasRenderingContext2D.miterLimit 是 Canvas 2D API 设置斜接面限制比例的属性。
+                // 当获取属性值时，会返回当前的值（默认值是10.0 ）。
+                // 当给属性赋值时，0、负数、 Infinity 和 NaN 都会被忽略；除此之外都会被赋予一个新值。
+                context.miterLimit = miterLimit;
+                context.beginPath();
+                context.moveTo(...points[0]);
+                for(let i = 1; i < points.length; i++) {
+                    context.lineTo(...points[i]);
+                }
+                context.stroke();
+            }
+
+            const canvas = document.querySelector('canvas');
+            const ctx = canvas.getContext('2d');
+            // 第一组
+            const points = [
+                [100, 100],
+                [100, 200],
+                [200, 150],
+                [300, 200],
+                [300, 100],
+            ];
+            ctx.strokeStyle = 'salmon';
+            drawPolyline(ctx, points, { lineWidth: 10 });
+            ctx.strokeStyle = 'slateblue';
+            drawPolyline(ctx, points);
+            // 第二组
+            const point2s = [
+                [100, 300],
+                [100, 400],
+                [200, 350],
+                [300, 400],
+                [300, 300],
+            ];
+            ctx.strokeStyle = 'seagreen';
+            drawPolyline(ctx, point2s, { lineWidth: 10, lineCap: 'round', lineJoin: 'bevel' });
+            ctx.strokeStyle = 'goldenrod';
+            drawPolyline(ctx, point2s);
+            // 第三组
+            const point3s = [
+                [400, 200],
+                [400, 300],
+                [500, 250],
+                [600, 300],
+                [600, 200],
+            ];
+            ctx.strokeStyle = 'goldenrod';
+            drawPolyline(ctx, point3s, { lineWidth: 10, lineCap: 'round', lineJoin: 'miter', miterLimit: 1.5});
+            ctx.strokeStyle = 'slateblue';
+            drawPolyline(ctx, point3s);
+        </script>
+    </body>
+</html>
