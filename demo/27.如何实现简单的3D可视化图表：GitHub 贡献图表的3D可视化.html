@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>如何实现简单的3D可视化图表：GitHub 贡献图表的3D可视化</title>
+        <style>
+            #stage {
+                width: 840px;
+                height: 640px;
+                border: 1px dashed #fa8072;
+            }
+        </style>
+    </head>
+    <body>
+        <script src="https://d3js.org/d3.v5.js"></script>
+        <div id="stage"></div>
+        <script type="module">
+            import { Scene } from 'https://unpkg.com/spritejs/dist/spritejs.esm.js';
+            import { Cube, Light, shaders } from 'https://unpkg.com/sprite-extend-3d/dist/sprite-extend-3d.esm.js';
+            // 获取该日期之前大约一年的数据
+            let cache = null;
+            async function getData(toDate = new Date()) {
+                if(!cache) {
+                    // 先从 JSON 文件中读取数据并缓存起来
+                    const data = await (await fetch('./assets/github_contributions_akira-cn.json')).json();
+                    cache = data.contributions.map((o) => {
+                        o.date = new Date(o.date.replace(/-/g, '/'));
+                        return o;
+                    });
+                }
+                // 要拿到 toData 日期之前大约一年的数据（52周）
+                let start = 0,
+                    end = cache.length;
+                // 用二分法查找
+                while(start < end - 1) {
+                    const mid = Math.floor(0.5 * (start + end));
+                    const {date} = cache[mid];
+                    if(date <= toDate) end = mid;
+                    else start = mid;
+                }
+                // 获得对应的一年左右的数据
+                let day;
+                if(end >= cache.length) {
+                    day = toDate.getDay();
+                } else {
+                    const lastItem = cache[end];
+                    day = lastItem.date.getDay();
+                }
+                // 根据当前星期几，再往前拿52周的数据
+                const len = 7 * 52 + day + 1;
+                const ret = cache.slice(end, end + len);
+                if(ret.length < len) {
+                    // 日期超过了数据范围，补齐数据
+                    const pad = new Array(len - ret.length).fill({count: 0, color: '#ebedf0'});
+                    ret.push(...pad);
+                }
+                return ret;
+            }
+
+            (async function () {
+                const container = document.getElementById('stage');
+                // 创建 Scene 对象
+                const scene = new Scene({
+                    container,
+                    displayRatio: 2, // 设置显示分辨率
+                });
+                // 创建 Layer 对象：创建了一个 3D（WebGL）上下文的 Canvas 画布
+                const layer = scene.layer3d('fglayer', {
+                    ambientColor: [0.5, 0.5, 0.5, 1], // 环境光
+                    camera: {
+                        fov: 35, // 相机的视角设置为 35 度
+                    },
+                });
+                // 相机坐标位置为（6, 6, 6)
+                layer.camera.attributes.pos = [6, 6, 6];
+                // 相机朝向坐标原点
+                layer.camera.lookAt([0, 0, 0]);
+
+                // 添加一道白色的平行光，方向是 (-3, -3, -1)
+                const light = new Light({
+                    direction: [-3, -3, -1],
+                    color: [1, 1, 1, 1]
+                });
+                layer.addLight(light);
+
+                // 创建用来 3D 展示的 WebGL 程序：shaders.GEOMETRY 默认支持 phong 反射模型的一组着色器
+                const program = layer.createProgram({
+                    vertex: shaders.GEOMETRY.vertex,
+                    fragment: shaders.GEOMETRY.fragment,
+                });
+
+                // 获取数据
+                const dataset = await getData(new Date(2019, 12, 31));
+                const max = d3.max(dataset, (a) => {
+                    return a.count;
+                });
+
+                // 用数据来操作文档树
+                const selection = d3.select(layer);
+                /**
+                 * 设置长方体 Cube 的属性
+                 *      长 (width)
+                 *      宽 (depth)
+                 *      高 (height)
+                 *      y 轴的缩放 (scaleY)：设置为 d.count 与 max 的比值，值在 0~1 之间
+                 *      位置 (pos)坐标：根据数据的索引设置 x 和 z 来决定的。
+                 *      长方体的颜色 (colors)
+                 * */
+                const chart = selection.selectAll('cube')
+                    .data(dataset)
+                    .enter()
+                    .append(() => {
+                        return new Cube(program);
+                    })
+                    .attr('width', 0.14)
+                    .attr('depth', 0.14)
+                    .attr('height', 1)
+                    .attr('scaleY', 0.001)
+                    // .attr('scaleY', (d) => {
+                    //     // max 是指一年的提交记录中，提交代码最多那天的数值。
+                    //     return d.count / max;
+                    // })
+                    .attr('pos', (d, i) => {
+                        const x0 = -3.8 + 0.0717 + 0.0015;
+                        const z0 = -0.5 + 0.05 + 0.0015;
+                        const x = x0 + 0.143 * Math.floor(i / 7);
+                        const z = z0 + 0.143 * (i % 7);
+                        // return [x, 0.5 * d.count /max, z];
+                        return [x, 0, z];
+                    })
+                    .attr('colors', (d, i) => {
+                        return d.color;
+                    });
+                
+                layer.setOrbit();
+
+                // 给柱状图增加一个底座
+                const fragment = `
+                    precision highp float;
+                    precision highp int;
+                    varying vec4 vColor;
+                    varying vec2 vUv;
+                    void main() {
+                        float x = fract(vUv.x * 53.0);
+                        float y = fract(vUv.y * 7.0);
+                        x = smoothstep(0.0, 0.1, x) - smoothstep(0.9, 1.0, x);
+                        y = smoothstep(0.0, 0.1, y) - smoothstep(0.9, 1.0, y);
+                        gl_FragColor = vColor * (x + y);
+                    }    
+                `;
+
+                const axisProgram = layer.createProgram({
+                    vertex: shaders.TEXTURE.vertex,
+                    fragment,
+                });
+
+                const ground = new Cube(axisProgram, {
+                    width: 7.6,
+                    height: 0.1,
+                    y: -0.05, // not 0.05 to avoid z-fighting
+                    depth: 1,
+                    colors: 'rgba(0, 0, 0, 0.1)',
+                });
+
+                layer.append(ground);
+
+                // 先把 scaleY 直接设为 0.001，然后用 d3.scaleLinear 来创建一个线性的缩放过程
+                const linear = d3.scaleLinear()
+                    .domain([0, max])
+                    .range([0, 1.0]);
+                // 最后通过 chart.trainsition 来实现这个线性动画
+                chart.transition()
+                    .duration(2000)
+                    .attr('scaleY', (d, i) => {
+                        return linear(d.count);
+                    })
+                    .attr('y', (d, i) => {
+                        return 0.5 * linear(d.count);
+                    });
+            }());
+        </script>
+    </body>
+</html>
