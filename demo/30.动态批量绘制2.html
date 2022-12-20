@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>动态批量绘制2</title>
+        <style>
+            canvas {
+                border: 1px dashed #fa8072;
+            }
+        </style>
+    </head>
+    <body>
+        <canvas width="500" height="500"></canvas>
+        <script src="./common/lib/gl-renderer.js"></script>
+        <script>
+            const canvas = document.querySelector("canvas");
+            const renderer = new GlRenderer(canvas);
+
+            const vertex = `
+                attribute vec3 a_vertexPosition;
+
+                uniform float uTime;
+            
+                highp float random(vec2 co) {
+                    highp float a = 12.9898;
+                    highp float b = 78.233;
+                    highp float c = 43758.5453;
+                    highp float dt= dot(co.xy ,vec2(a,b));
+                    highp float sn= mod(dt,3.14);
+                    return fract(sin(sn) * c);
+                }
+
+                varying vec3 vColor;
+
+                void main() {
+                    vec2 pos = a_vertexPosition.xy;
+                    float t = a_vertexPosition.z / 10000.0;
+
+                    float alpha = 6.28 * random(vec2(uTime, 2.0 + t));
+                    float c = cos(alpha);
+                    float s = sin(alpha);
+
+                    mat3 modelMatrix = mat3(
+                        c, -s, 0,
+                        s, c, 0,
+                        2.0 * random(vec2(uTime, t)) - 1.0, 2.0 * random(vec2(uTime, 1.0 + t)) - 1.0, 1
+                    );
+                    vColor = vec3(
+                        random(vec2(uTime, 4.0 + t)),
+                        random(vec2(uTime, 5.0 + t)),
+                        random(vec2(uTime, 6.0 + t))
+                    );
+                    gl_Position = vec4(modelMatrix * vec3(pos, 1), 1);
+                }
+            `;
+
+            const fragment = `
+                #ifdef GL_ES
+                precision highp float;
+                #endif
+
+                varying vec3 vColor;
+                
+                void main() {
+                    gl_FragColor.rgb = vColor;
+                    gl_FragColor.a = 1.0;
+                }
+            `;
+
+            const program = renderer.compileSync(fragment, vertex);
+            renderer.useProgram(program);
+
+            // 将图形的顶点和索引全部合并起来批量创建图形
+            function createShapes(count) {
+                // 创建两个类型数组 positions 和 cells
+                const positions = new Float32Array(count * 6 * 3); // 最多6边形
+                const cells = new Int16Array(count * 4 * 3); // 索引数等于3倍顶点数-2
+
+                let offset = 0;
+                let cellsOffset = 0;
+                for(let i = 0; i < count; i++) {
+                    const edges = 3 + Math.floor(4 * Math.random());
+                    const delta = 2 * Math.PI / edges;
+
+                    for(let j = 0; j < edges; j++) {
+                        const angle = j * delta;
+                        positions.set([0.1 * Math.sin(angle), 0.1 * Math.cos(angle), i], (offset + j) * 3);
+                        if(j > 0 && j < edges - 1) {
+                            cells.set([offset, offset + j, offset + j + 1], cellsOffset);
+                            cellsOffset += 3;
+                        }
+                    }
+                    offset += edges;
+                }
+                return { positions, cells };
+            }
+            
+            // 一次性渲染出来
+            const COUNT = 3000;
+            const { positions, cells } = createShapes(COUNT);
+
+            renderer.setMeshData([{
+                positions,
+                cells,
+            }]);
+
+            function render(t) {
+                renderer.uniforms.uTime = t;
+                renderer.render();
+                requestAnimationFrame(render);
+            }
+
+            render(0);
+        </script>
+    </body>
+</html>

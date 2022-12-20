@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>动态批量绘制</title>
+        <style>
+            canvas {
+                border: 1px dashed #fa8072;
+            }
+        </style>
+    </head>
+    <body>
+        <canvas width="500" height="500"></canvas>
+        <script src="./common/lib/gl-renderer.js"></script>
+        <script>
+            const canvas = document.querySelector("canvas");
+            const renderer = new GlRenderer(canvas);
+
+            const vertex = `
+                attribute vec2 a_vertexPosition;
+                
+                void main() {
+                    gl_Position = vec4(a_vertexPosition, 1, 1);
+                }
+            `;
+
+            const fragment = `
+                #ifdef GL_ES
+                precision highp float;
+                #endif
+
+                uniform vec4 u_color;
+                
+                void main() {
+                    gl_FragColor = u_color;
+                }
+            `;
+
+            const program = renderer.compileSync(fragment, vertex);
+            renderer.useProgram(program);
+
+            // 创建随机的正三角形、正方形和正五边形
+            function randomShape(x = 0, y = 0, edges = 3, rotation = 0.0, radius = 0.1) {
+                const a0 = rotation;
+                const delta = 2 * Math.PI / edges;
+                const positions = [];
+                const cells = [];
+                for(let i = 0; i < edges; i++) {
+                    const angle = a0 + i * delta;
+                    positions.push([x + radius * Math.sin(angle), y + radius * Math.cos(angle)]);
+                    if(i > 0 && i < edges - 1) {
+                        cells.push([0, i, i + 1]);
+                    }
+                }
+                return { positions, cells };
+            }
+
+            const COUNT = 3000;
+
+            // 依次渲染每个三角形
+            function render() {
+                for (let i = 0; i < COUNT; i++) {
+                    const x = 2 * Math.random() - 1;
+                    const y = 2 * Math.random() - 1;
+                    const rotation = 2 * Math.PI * Math.random();
+
+                    renderer.uniforms.u_color = [
+                        Math.random(),
+                        Math.random(),
+                        Math.random(),
+                        1,
+                    ];
+
+                    // 随机生成三、四、五、六边形
+                    const {positions, cells} = randomShape(x, y, 3 + Math.floor(4 * Math.random()), rotation);
+                    renderer.setMeshData([{
+                        positions,
+                        cells,
+                    }]);
+
+                    renderer._draw();
+                }
+                requestAnimationFrame(render);
+            }
+
+            render();
+        </script>
+    </body>
+</html>

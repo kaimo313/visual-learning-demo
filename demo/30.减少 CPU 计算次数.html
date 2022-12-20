@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>减少 CPU 计算次数</title>
+        <style>
+            canvas {
+                border: 1px dashed #fa8072;
+            }
+        </style>
+    </head>
+    <body>
+        <canvas width="500" height="500"></canvas>
+        <script src="./common/lib/gl-renderer.js"></script>
+        <script>
+            const canvas = document.querySelector("canvas");
+            const renderer = new GlRenderer(canvas);
+
+            // 利用顶点着色器内完成位置和角度的计算
+            const vertex = `
+                attribute vec2 a_vertexPosition;
+
+                uniform mat3 modelMatrix;
+
+                void main() {
+                    vec3 pos = modelMatrix * vec3(a_vertexPosition, 1);
+                    gl_Position = vec4(pos, 1);
+                }
+            `;
+
+            const fragment = `
+                #ifdef GL_ES
+                precision highp float;
+                #endif
+
+                uniform vec4 u_color;
+                
+                void main() {
+                    gl_FragColor = u_color;
+                }
+            `;
+
+            const program = renderer.compileSync(fragment, vertex);
+            renderer.useProgram(program);
+
+            
+            // 生成一个正三角形顶点，并设置数据到缓冲区
+            const alpha = 2 * Math.PI / 3;
+            const beta = 2 * alpha;
+
+            renderer.setMeshData({
+                positions: [
+                    [0, 0.1],
+                    [0.1 * Math.sin(alpha), 0.1 * Math.cos(alpha)],
+                    [0.1 * Math.sin(beta), 0.1 * Math.cos(beta)],
+                ],
+            });
+
+            const COUNT = 3000;
+
+            // 依次渲染每个三角形
+            function render() {
+                for (let i = 0; i < COUNT; i++) {
+                    const x = 2 * Math.random() - 1;
+                    const y = 2 * Math.random() - 1;
+                    const rotation = 2 * Math.PI * Math.random();
+
+                    // 用随机坐标和角度更新每个三角形的 modelMatrix 数据
+                    renderer.uniforms.modelMatrix = [
+                        Math.cos(rotation), -Math.sin(rotation), 0,
+                        Math.sin(rotation), Math.cos(rotation), 0,
+                        x, y, 1
+                    ];
+
+                    renderer.uniforms.u_color = [
+                        Math.random(),
+                        Math.random(),
+                        Math.random(),
+                        1,
+                    ];
+
+                    renderer._draw();
+                }
+                requestAnimationFrame(render);
+            }
+
+            render();
+        </script>
+    </body>
+</html>
