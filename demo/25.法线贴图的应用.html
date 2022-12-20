@@ -291,9 +291,9 @@
             const matrial = new Material(new Color('#2e8b57'), 2.0);
 
             (async function () {
-                const data = await (await fetch('./assets/25/rounded-cube.json')).json();
-                const normalMap = await loadTexture('./assets/25/rock_normal.jpg');
-                const texture = await loadTexture('./assets/25/rock.jpg');
+                const data = await (await fetch('./assets/img/25/rounded-cube.json')).json();
+                const normalMap = await loadTexture('./assets/img/25/rock_normal.jpg');
+                const texture = await loadTexture('./assets/img/25/rock.jpg');
                 console.log(normalMap);
                 const program = new Program(gl, {
                     vertex,

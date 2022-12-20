@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>优化滤镜</title>
+        <style>
+            canvas {
+                border: 1px dashed #fa8072;
+            }
+        </style>
+    </head>
+    <body>
+        <canvas width="500" height="500"></canvas>
+        <script>
+            const canvas = document.querySelector("canvas");
+            const ctx = canvas.getContext("2d");
+
+            // 创建缓存的函数
+            function createCache() {
+                const ret = [];
+                for (let i = 0; i < shapeTypes.length; i++) {
+                    // 创建离屏Canvas缓存图形
+                    const cacheCanvas = new OffscreenCanvas(20, 20);
+                    // 将图形绘制到离屏Canvas对象上
+                    const type = shapeTypes[i];
+                    const context = cacheCanvas.getContext("2d");
+                    context.fillStyle = "red";
+                    context.strokeStyle = "black";
+                    if (type > 0) {
+                        const points = regularShape(10, 10, 10, type);
+                        drawShape(context, points);
+                    } else {
+                        context.beginPath();
+                        context.arc(10, 10, 10, 0, TAU);
+                        context.stroke();
+                        context.fill();
+                    }
+                    ret.push(cacheCanvas);
+                }
+                // 将离屏Canvas数组（缓存对象）返回
+                return ret;
+            }
+
+            // 创建正多边形，返回顶点
+            function regularShape(x, y, r, edges = 3) {
+                const points = [];
+                const delta = (2 * Math.PI) / edges;
+                for (let i = 0; i < edges; i++) {
+                    const theta = i * delta;
+                    points.push([
+                        x + r * Math.sin(theta),
+                        y + r * Math.cos(theta),
+                    ]);
+                }
+                return points;
+            }
+
+            // 根据顶点绘制图形
+            function drawShape(context, points) {
+                context.fillStyle = "red";
+                context.strokeStyle = "black";
+                context.lineWidth = 2;
+                context.beginPath();
+                context.moveTo(...points[0]);
+                for (let i = 1; i < points.length; i++) {
+                    context.lineTo(...points[i]);
+                }
+                context.closePath();
+                context.stroke();
+                context.fill();
+            }
+
+            // 多边形类型，包括正三角形、正四边形、正五边形、正六边形和正100边形以及正500边形
+            const shapeTypes = [3, 4, 5, 6, 100, 500];
+            const COUNT = 1000;
+            const TAU = Math.PI * 2;
+
+            // 一次性创建缓存，直接通过缓存来绘图
+            const shapes = createCache();
+            ctx.filter = "blur(5px)";
+
+            // 创建离屏的 Canvas
+            const ofc = new OffscreenCanvas(canvas.width, canvas.height);
+            const octx = ofc.getContext("2d");
+            function draw() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                octx.clearRect(0, 0, canvas.width, canvas.height);
+                // 将图形不应用滤镜，绘制到离屏Canvas上
+                for (let i = 0; i < COUNT; i++) {
+                    const shape =
+                        shapes[Math.floor(Math.random() * shapeTypes.length)];
+                    const x = Math.random() * canvas.width;
+                    const y = Math.random() * canvas.height;
+                    octx.drawImage(shape, x, y);
+                }
+                // 再将离屏Canvas图像绘制到画布上，这一次绘制采用了滤镜
+                ctx.drawImage(ofc, 0, 0);
+                requestAnimationFrame(draw);
+            }
+
+            draw();
+        </script>
+    </body>
+</html>

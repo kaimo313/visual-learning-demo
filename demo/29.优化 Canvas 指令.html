@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>优化 Canvas 指令</title>
+        <style>
+            canvas {
+                border: 1px dashed #fa8072;
+            }
+        </style>
+    </head>
+    <body>
+        <canvas width="500" height="500"></canvas>
+        <script>
+            const canvas = document.querySelector("canvas");
+            const ctx = canvas.getContext("2d");
+
+            // 创建正多边形，返回顶点
+            function regularShape(x, y, r, edges = 3) {
+                const points = [];
+                const delta = (2 * Math.PI) / edges;
+                for (let i = 0; i < edges; i++) {
+                    const theta = i * delta;
+                    points.push([
+                        x + r * Math.sin(theta),
+                        y + r * Math.cos(theta),
+                    ]);
+                }
+                return points;
+            }
+
+            // 根据顶点绘制图形
+            function drawShape(context, points) {
+                context.fillStyle = "red";
+                context.strokeStyle = "black";
+                context.lineWidth = 2;
+                context.beginPath();
+                context.moveTo(...points[0]);
+                for (let i = 1; i < points.length; i++) {
+                    context.lineTo(...points[i]);
+                }
+                context.closePath();
+                context.stroke();
+                context.fill();
+            }
+
+            // 多边形类型，包括正三角形、正四边形、正五边形、正六边形和正100边形以及正500边形
+            // 用 -1 代替正 500 边形
+            const shapeTypes = [3, 4, 5, 6, 100, -1];
+            const COUNT = 1000;
+            const TAU = Math.PI * 2;
+
+            // 执行绘制
+            function draw() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                for (let i = 0; i < COUNT; i++) {
+                    const type =
+                        shapeTypes[
+                            Math.floor(Math.random() * shapeTypes.length)
+                        ];
+                    const x = Math.random() * canvas.width;
+                    const y = Math.random() * canvas.height;
+                    // 如果type小于0表名多边形是正500边形
+                    if(type > 0) {
+                        // 画正多边形
+                        const points = regularShape(x, y, 10, type);
+                        drawShape(ctx, points);
+                    } else {
+                        // 画圆
+                        ctx.beginPath();
+                        // 绘制正多边形，否则用 arc 指令来画圆
+                        ctx.arc(x, y, 10, 0, TAU);
+                        ctx.stroke();
+                        ctx.fill();
+                    }
+                }
+                requestAnimationFrame(draw);
+            }
+
+            draw();
+        </script>
+    </body>
+</html>

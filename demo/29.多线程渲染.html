@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>多线程渲染</title>
+        <style>
+            canvas {
+                border: 1px dashed #fa8072;
+            }
+        </style>
+    </head>
+    <body>
+        <canvas width="500" height="500"></canvas>
+        <script>
+            const canvas = document.querySelector('canvas');
+
+            const worker = new Worker('./assets/js/29/worker.js');
+            const ofc = canvas.transferControlToOffscreen();
+            worker.postMessage({
+                canvas: ofc,
+                type: 'init',
+            }, [ofc]);
+        </script>
+    </body>
+</html>
