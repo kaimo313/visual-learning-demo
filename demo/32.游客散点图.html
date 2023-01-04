@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>游客散点图</title>
+        <style>
+            #main {
+                width: 500px;
+                height: 500px;
+                position: absolute;
+                border: 1px dashed #fa8072;
+            }
+
+            #main > * {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+            }
+
+            #main .landmark {
+                position: absolute;
+                line-height: 200px;
+                width: 200px;
+                height: 200px;
+                border-radius: 50%;
+                text-align: center;
+                font-size: 32px;
+                color: #fff;
+            }
+            #main .landmark1 {
+                background: #daa520;
+            }
+            #main .landmark2 {
+                left: 260px;
+                background: #fa8072;
+            }
+            #main .landmark3 {
+                top: 260px;
+                background: #6a5acd;
+            }
+            #main .landmark4 {
+                top: 260px;
+                left: 260px;
+                background: #2e8b57;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="main">
+            <div>
+                <div class="landmark landmark1">广场</div>
+                <div class="landmark landmark2">休闲区</div>
+                <div class="landmark landmark3">游乐场</div>
+                <div class="landmark landmark4">花园</div>
+            </div>
+            <canvas width="600" height="600"></canvas>
+        </div>
+        <script>
+            const canvas = document.querySelector("canvas");
+            const { width, height } = canvas;
+
+            function draw(data, filter = null) {
+                if (filter) data = data.filter(filter);
+                const context = canvas.getContext("2d");
+                for (let i = 0; i < data.length; i++) {
+                    const { x, y, gender } = data[i];
+                    context.fillStyle =
+                        gender === "f"
+                            ? "rgba(255, 0, 0, 0.4)"
+                            : "rgba(0, 0, 255, 0.4)";
+                    context.beginPath();
+                    const spot = context.arc(x, y, 10, 0, Math.PI * 2);
+                    context.fill();
+                }
+            }
+
+            fetch("./data/park-people.json")
+                .then((res) => {
+                    return res.json();
+                })
+                .then((data) => {
+                    // draw(data, ({ time }) => time === 8);
+                    draw(data, ({ time }) => time === 12);
+                    // draw(data, ({ time }) => time === 18);
+                    // draw(data, ({ time }) => time === 20);
+                });
+        </script>
+    </body>
+</html>
