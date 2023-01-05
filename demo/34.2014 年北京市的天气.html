@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>2014 年北京市的天气</title>
+    </head>
+    <body>
+        <div id="app" style="width: 1200px; height: 600px"></div>
+        <script src="https://d3js.org/d3.v6.js"></script>
+        <script src="https://unpkg.com/spritejs/dist/spritejs.min.js"></script>
+        <script src="https://unpkg.com/@qcharts/core/dist/index.js"></script>
+        <script>
+            (async function () {
+                // 通过 fetch 读取 csv 的数据
+                const rawData = await (await fetch("./data/beijing_2014.csv")).text();
+                console.log(rawData)
+                // 使用 d3 的 csvParse 方法，将数据解析成 JSON 数组
+                const data = d3.csvParse(rawData);
+                // 截取了 1 月到 3 月的平均气温数据
+                const dataset = data
+                    .filter((d) => new Date(d.Date).getMonth() < 3)
+                    .map((d) => {
+                        return {
+                            temperature: Number(d["Temperature(Celsius)(avg)"]),
+                            date: d.Date,
+                            category: "平均气温",
+                        };
+                    });
+                console.log(dataset);
+
+                const { Chart, Line, Legend, Tooltip, Axis } = qcharts;
+                // 创建图表（Chart）并传入数据
+                const chart = new Chart({
+                    container: "#app",
+                });
+                let clientRect = { bottom: 50 };
+                chart.source(dataset, {
+                    row: "category",
+                    value: "temperature",
+                    text: "date",
+                });
+
+                // 创建图形（Visual)，这里创建的是折线图，所以使用 Line 对象；
+                const line = new Line({ clientRect });
+                // 创建横、纵两个坐标轴（Axis）、提示（ToolTip）和一个图例（Legend）
+                const axisBottom = new Axis({ clientRect }).style(
+                    "grid",
+                    false
+                );
+                axisBottom.attr("formatter", (d) => "");
+                const toolTip = new Tooltip({
+                    title: (arr) => {
+                        return "平均气温";
+                    },
+                });
+                const legend = new Legend();
+                const axisLeft = new Axis({ orient: "left", clientRect })
+                    .style("axis", false)
+                    .style("scale", false);
+
+                // 将图形、坐标轴、提示和图例都添加到图表上
+                chart.append([line, axisBottom, axisLeft, toolTip, legend]);
+            })();
+        </script>
+    </body>
+</html>
