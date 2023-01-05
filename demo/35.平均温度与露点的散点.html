@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>平均温度与露点的散点</title>
+    </head>
+    <body>
+        <div id="app" style="width: 1200px; height: 600px"></div>
+        <script src="https://d3js.org/d3.v6.js"></script>
+        <script src="https://unpkg.com/spritejs/dist/spritejs.min.js"></script>
+        <script src="https://unpkg.com/@qcharts/core/dist/index.js"></script>
+        <script>
+            (async function () {
+                // 通过 fetch 读取 csv 的数据
+                const rawData = await (
+                    await fetch("./data/beijing_2014.csv")
+                ).text();
+                console.log(rawData);
+                // 使用 d3 的 csvParse 方法，将数据解析成 JSON 数组
+                const data = d3.csvParse(rawData);
+                
+                const dataset = data.map(d => {
+                    return {
+                        temperature: Number(d['Temperature(Celsius)(avg)']),
+                        tdp: Number(d['Dew Point(Celsius)(avg)']),
+                        category: '平均气温与露点'
+                    }
+                });
+
+                const { Chart, Scatter, Legend, Tooltip, Axis } = qcharts;
+                // 创建图表（Chart）并传入数据
+                const chart = new Chart({
+                    container: "#app",
+                });
+                let clientRect = { bottom: 50 };
+                chart.source(dataset, {
+                    row: "category",
+                    value: "temperature",
+                    text: "tdp",
+                });
+
+                // 创建横、纵两个坐标轴（Axis）、提示（ToolTip）和一个图例（Legend）
+                const scatter = new Scatter({
+                    clientRect,
+                    showGuideLine: true,
+                });
+                const toolTip = new Tooltip({
+                    title: (data) => data.category,
+                    formatter: (data) => {
+                        return `温度：${data.value}C  露点：${data.tdp}% `
+                    }
+                });
+                const legend = new Legend();
+                const axisLeft = new Axis({ orient: "left", clientRect })
+                    .style("axis", false)
+                    .style("scale", false);
+                const axisBottom = new Axis();
+                // 将图形、坐标轴、提示和图例都添加到图表上
+                chart.append([scatter, axisBottom, axisLeft, toolTip, legend]);
+            })();
+        </script>
+    </body>
+</html>
