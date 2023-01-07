@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>使用 D3.js 绘制力导向图</title>
+    <style>
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            padding: 0;
+            margin: 0;
+        }
+
+        #stage {
+            display: inline-block;
+            width: 100%;
+            height: 0;
+            padding-bottom: 75%;
+        }
+
+        #stage canvas {
+            background-color: seashell;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="stage"></div>
+
+    <script src="https://unpkg.com/spritejs/dist/spritejs.min.js"></script>
+    <script src="https://d3js.org/d3.v6.js"></script>
+
+    <script>
+        const { Scene } = spritejs;
+        console.log(Scene);
+        const container = document.getElementById('stage');
+        // 先创建一个 Scene 对象
+        const scene = new Scene({
+            container,
+            width: 1200,
+            height: 900,
+            mode: 'stickyWidth'
+        });
+
+        // 创建了一个 fglayer，它对应一个 Canvas 画布
+        const layer = scene.layer('fglayer', {
+            handleEvent: false,
+            autoRender: false,
+        });
+
+        // 创建一个 d3 的力模型对象 simulation
+        const simulation = d3.forceSimulation()
+            .force('link', d3.forceLink().id(d => d.id)) //节点连线 
+            .force('charge', d3.forceManyBody()) // 多实体作用
+            .force('center', d3.forceCenter(400, 300)); // 力中心
+
+        // 用 d3.json 来读取数据，它返回一个 Promise 对象
+        d3.json('./data/FeHelper-20230106175037.json').then(graph => {
+            console.log(graph);
+            function ticked() {
+                d3.select(layer).selectAll('path')
+                    .attr('d', (d) => {
+                        const [sx, sy] = [d.source.x, d.source.y];
+                        const [tx, ty] = [d.target.x, d.target.y];
+                        return `M${sx} ${sy} L ${tx} ${ty}`;
+                    })
+                    .attr('strokeColor', 'salmon')
+                    .attr('lineWidth', 1);
+                d3.select(layer).selectAll('sprite')
+                    .attr('pos', (d) => {
+                        return [d.x, d.y];
+                    });
+                layer.render();
+            }
+            // 先用力模型来处理数据
+            simulation.nodes(graph.nodes).on('tick', ticked);
+            simulation.force('link').links(graph.links);
+            // 再绘制节点
+            d3.select(layer).selectAll('sprite')
+                .data(graph.nodes)
+                .enter()
+                .append('sprite')
+                .attr('pos', (d) => {
+                    return [d.x, d.y];
+                })
+                .attr('size', [10, 10])
+                .attr('border', [1, 'salmon'])
+                .attr('borderRadius', 5)
+                .attr('anchor', 0.5);
+            // 再绘制连线
+            d3.select(layer).selectAll('path')
+                .data(graph.links)
+                .enter()
+                .append('path')
+                .attr('d', (d) => {
+                    const [sx, sy] = [d.source.x, d.source.y];
+                    const [tx, ty] = [d.target.x, d.target.y];
+                    return `M${sx} ${sy} L ${tx} ${ty}`;
+                })
+                .attr('name', (d, index) => {
+                    return `path${index}`;
+                })
+                .attr('strokeColor', 'salmon');
+
+            function dragsubject() {
+                const [x, y] = layer.toLocalPos(event.x, event.y);
+                return simulation.find(x, y);
+            }
+            // 将三个事件处理函数注册到 layer 的 canvas 上
+            d3.select(layer.canvas)
+                .call(d3.drag()
+                    .container(layer.canvas)
+                    .subject(dragsubject)
+                    .on('start', dragstarted)
+                    .on('drag', dragged)
+                    .on('end', dragended)
+                );
+        });
+
+        // dragstarted 处理开始拖拽的事件
+        function dragstarted(event) {
+            // 通过前面创建的 simulation 对象启动力模拟，记录一下当前各个节点的 x、y 坐标
+            if (!event.active) simulation.alphaTarget(0.3).restart();
+            const [x, y] = [event.subject.x, event.subject.y];
+            event.subject.fx0 = x;
+            event.subject.fy0 = y;
+            event.subject.fx = x;
+            event.subject.fy = y;
+            // 通过 layer.toLocalPos 方法将它转换成相对于 layer 的坐标
+            const [x0, y0] = layer.toLocalPos(event.x, event.y);
+            event.subject.x0 = x0;
+            event.subject.y0 = y0;
+        }
+        // dragged 处理拖拽中的事件
+        function dragged(event) {
+            // 转换 x、y 坐标，计算出坐标的差值，然后更新 fx、fy
+            const [x, y] = layer.toLocalPos(event.x, event.y),
+                { x0, y0, fx0, fy0 } = event.subject;
+            const [dx, dy] = [x - x0, y - y0];
+
+            event.subject.fx = fx0 + dx;
+            event.subject.fy = fy0 + dy;
+        }
+        // dragended 处理拖住结束事件，清空 fx 和 fy
+        function dragended(event) {
+            if (!event.active) simulation.alphaTarget(0);
+            event.subject.fx = null;
+            event.subject.fy = null;
+        }
+    </script>
+
+</body>
+
+</html>

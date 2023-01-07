@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>使用 D3.js 绘制条形图</title>
+    <style>
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            padding: 40px;
+            margin: 0;
+        }
+        #stage {
+            display: inline-block;
+            width: 1200px;
+            height: 600px;
+            border: 1px dashed salmon;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="stage"></div>
+
+    <script src="https://unpkg.com/spritejs/dist/spritejs.min.js"></script>
+    <script src="https://d3js.org/d3.v6.js"></script>
+
+    <script>
+        const { Scene, SpriteSvg } = spritejs;
+
+        const container = document.getElementById('stage');
+        // 先创建一个 Scene 对象
+        const scene = new Scene({
+            container,
+            width: 600,
+            height: 600,
+        });
+
+        // 数组数据
+        const dataset = [125, 121, 127, 193, 309];
+
+        // 使用 D3.js 的方法对数据进行映射
+        // scale 函数把一组数值线性映射到某个范围，下面就是将数值映射到 500 像素区间，数值是从 100 到 309。
+        const scale = d3.scaleLinear()
+            .domain([100, d3.max(dataset)])
+            .range([0, 500]);
+
+        // 创建了一个 fglayer，它对应一个 Canvas 画布
+        const fglayer = scene.layer('fglayer');
+        // 将对应的 fglayer 元素经过 d3 包装后返回
+        const s = d3.select(fglayer);
+
+        const colors = ['#fe645b', '#feb050', '#c2af87', '#81b848', '#55abf8'];
+        // 在 fglayer 元素上进行迭代操作，selectAll 用来返回 fglayer 下的 sprite 子元素，表示一个图形
+        // 通过执行 enter() 和 append(‘sprite’)，在 fglayer 下添加了 5 个 sprite 子元素。
+        // 再给每个 sprite 元素迭代设置属性，不同的值，就通过迭代算子来设置。
+        const chart = s.selectAll('sprite')
+            .data(dataset)
+            .enter()
+            .append('sprite')
+            .attr('x', 20)
+            .attr('y', (d, i) => {
+                return 40 + i * 95;
+            })
+            .attr('width', scale)
+            .attr('height', 80)
+            .attr('bgcolor', (d, i) => {
+                return colors[i];
+            });
+
+        // 添加坐标轴
+        // 通过 d3.axisBottom 创建一个底部的坐标，通过 tickValues 给坐标轴传要显示的刻度值 100, 200, 300
+        // 返回的 axis 函数用来绘制坐标轴，它是使用 svg 来绘制坐标轴的
+        const axis = d3.axisBottom(scale).tickValues([100, 200, 300]);
+        // SpriteSvg 可以绘制一个 SVG 图形，然后将这个图形以 WebGL 或者 Canvas2D 的方式绘制到画布上。
+        const axisNode = new SpriteSvg({
+            x: 0,
+            y: 520,
+        });
+        // 通过 d3.select 选中 axisNode 对象的 svg 属性进行 svg 属性设置和创建 svg 元素操作
+        d3.select(axisNode.svg)
+            .attr('width', 600)
+            .attr('height', 520)
+            .append('g')
+            .attr('transform', 'translate(20, 0)')
+            .call(axis);
+
+        axisNode.svg.children[0].setAttribute('font-size', 20);
+        // 将 axisNode 添加到 fglayer 上
+        fglayer.append(axisNode);
+    </script>
+
+</body>
+
+</html>
