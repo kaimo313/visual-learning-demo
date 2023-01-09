@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>利用 GeoJSON 数据绘制地图</title>
+        <style>
+            canvas {
+                border: 1px dashed salmon;
+            }
+        </style>
+    </head>
+    <body>
+        <canvas width="1024" height="512"></canvas>
+        <script>
+            const width = 1024;
+            const height = 512;
+
+            // 投影函数
+            function projection([longitude, latitude]) {
+                const x = (width * (180 + longitude)) / 360;
+                const y = height * (1.0 - (90 + latitude) / 180); // Canvas坐标系y轴朝下
+                return [x, y];
+            }
+            // 绘制
+            function drawPoints(ctx, points) {
+                ctx.beginPath();
+                ctx.moveTo(...points[0]);
+                for (let i = 1; i < points.length; i++) {
+                    ctx.lineTo(...points[i]);
+                }
+                ctx.fill();
+            }
+
+            const canvas = document.querySelector("canvas");
+            const ctx = canvas.getContext("2d");
+            ctx.fillStyle = "salmon";
+
+            (async function () {
+                // 用 fetch 来读取 JSON 文件
+                const worldData = await (await fetch("./data/world-geojson.json")).json();
+                const features = worldData.features;
+                // 遍历数据
+                features.forEach(({ geometry }) => {
+                    if (geometry.type === "MultiPolygon") {
+                        const coordinates = geometry.coordinates;
+                        if (coordinates) {
+                            coordinates.forEach((contours) => {
+                                contours.forEach((path) => {
+                                    // 进行投影转换
+                                    const points = path.map(projection);
+                                    // 进行绘制
+                                    drawPoints(ctx, points);
+                                });
+                            });
+                        }
+                    } else if (geometry.type === "Polygon") {
+                        const contours = geometry.coordinates;
+                        contours.forEach((path) => {
+                            // 进行投影转换
+                            const points = path.map(projection);
+                            // 进行绘制
+                            drawPoints(ctx, points);
+                        });
+                    }
+                });
+            })();
+        </script>
+    </body>
+</html>

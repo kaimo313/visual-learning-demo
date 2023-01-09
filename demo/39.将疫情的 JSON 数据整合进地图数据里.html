@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>将疫情的 JSON 数据整合进地图数据里</title>
+</head>
+
+<body>
+	<script src="https://lib.baomitu.com/topojson/3.0.2/topojson.min.js"></script>
+	<script>
+		// 数据映射函数
+		function mapDataToCountries(geoData, covidData) {
+			const covidDataMap = {};
+			covidData.dailyReports.forEach((d) => {
+				const date = d.updatedDate;
+				const countries = d.countries;
+				countries.forEach((country) => {
+					const name = country.country;
+					covidDataMap[name] = covidDataMap[name] || {};
+					covidDataMap[name][date] = country;
+				});
+			});
+			geoData.features.forEach((d) => {
+				const name = d.properties.name;
+				d.properties.covid = covidDataMap[name];
+			});
+		}
+
+		(async function () {
+			// 使用 topojson 数据
+			const worldData = await (await fetch('./data/world-topojson.json')).json();
+			const countries = topojson.feature(worldData, worldData.objects.countries);
+
+			const covidData = await (await fetch('./data/covid-data.json')).json();
+			mapDataToCountries(countries, covidData);
+
+			console.log("将疫情的 JSON 数据整合进地图数据里--->", countries)
+		})();
+	</script>
+</body>
+
+</html>

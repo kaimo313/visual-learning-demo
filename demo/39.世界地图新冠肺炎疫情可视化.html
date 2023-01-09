@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>世界地图新冠肺炎疫情可视化</title>
+        <style>
+            canvas {
+                border: 1px dashed salmon;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="dateInfo"></div>
+        <canvas width="1200" height="600"></canvas>
+        <script src="https://lib.baomitu.com/topojson/3.0.2/topojson.min.js"></script>
+        <script>
+            const width = 1200;
+            const height = 600;
+
+            // 投影函数
+            function projection([longitude, latitude]) {
+                const x = (width * (180 + longitude)) / 360;
+                const y = height * (1.0 - (90 + latitude) / 180); // Canvas坐标系y轴朝下
+                return [x, y];
+            }
+            // 绘制
+            function drawPoints(ctx, points) {
+                ctx.beginPath();
+                ctx.moveTo(...points[0]);
+                for (let i = 1; i < points.length; i++) {
+                    ctx.lineTo(...points[i]);
+                }
+                ctx.fill();
+            }
+
+            // 颜色映射
+            function mapColor(confirmed) {
+                // 无人感染
+                if (!confirmed) {
+                    return "rgb(80, 255, 80)";
+                }
+                // 小于 10
+                if (confirmed < 10) {
+                    return "rgb(250, 247, 171)";
+                }
+                // 感染人数 10~99 人
+                if (confirmed < 100) {
+                    return "rgb(255, 186, 66)";
+                }
+                // 感染人数 100~499 人
+                if (confirmed < 500) {
+                    return "rgb(234, 110, 41)";
+                }
+                // 感染人数 500~999 人
+                if (confirmed < 1000) {
+                    return "rgb(224, 81, 57)";
+                }
+                // 感人人数 1000~9999 人
+                if (confirmed < 10000) {
+                    return "rgb(192, 50, 39)";
+                }
+                // 感染人数超 10000 人
+                return "rgb(151, 32, 19)";
+            }
+
+            // 日期格式
+            function formatDate(date) {
+                const year = date.getFullYear();
+                let month = date.getMonth() + 1;
+                month = month > 9 ? month : `0${month}`;
+                let day = date.getDate();
+                day = day > 9 ? day : `0${day}`;
+                return `${year}-${month}-${day}`;
+            }
+
+            // 数据映射函数
+            function mapDataToCountries(geoData, covidData) {
+                const covidDataMap = {};
+                covidData.dailyReports.forEach((d) => {
+                    const date = d.updatedDate;
+                    const countries = d.countries;
+                    countries.forEach((country) => {
+                        const name = country.country;
+                        covidDataMap[name] = covidDataMap[name] || {};
+                        covidDataMap[name][date] = country;
+                    });
+                });
+                geoData.features.forEach((d) => {
+                    const name = d.properties.name;
+                    d.properties.covid = covidDataMap[name];
+                });
+            }
+
+            // 绘制地图
+            function drawMap(ctx, countries, date) {
+                date = formatDate(date);
+                dateInfo.innerHTML = date;
+                countries.features.forEach(({ geometry, properties }) => {
+                    const covid = properties.covid
+                        ? properties.covid[date]
+                        : null;
+                    let confirmed;
+                    if (covid) {
+                        confirmed = covid.confirmed;
+                        properties.lastConfirmed = confirmed;
+                    } else if (properties.lastConfirmed) {
+                        confirmed = properties.lastConfirmed;
+                    }
+                    ctx.fillStyle = mapColor(confirmed);
+                    if (geometry.type === "MultiPolygon") {
+                        const coordinates = geometry.coordinates;
+                        if (coordinates) {
+                            coordinates.forEach((contours) => {
+                                contours.forEach((path) => {
+                                    const points = path.map(projection);
+                                    drawPoints(ctx, points);
+                                });
+                            });
+                        }
+                    } else if (geometry.type === "Polygon") {
+                        const contours = geometry.coordinates;
+                        contours.forEach((path) => {
+                            const points = path.map(projection);
+                            drawPoints(ctx, points);
+                        });
+                    }
+                });
+            }
+
+            const canvas = document.querySelector("canvas");
+            const ctx = canvas.getContext("2d");
+
+            (async function () {
+                // 使用 topojson 数据
+                const worldData = await (
+                    await fetch("./data/world-topojson.json")
+                ).json();
+                const countries = topojson.feature(
+                    worldData,
+                    worldData.objects.countries
+                );
+                // 疫情数据
+                const covidData = await (
+                    await fetch("./data/covid-data.json")
+                ).json();
+                mapDataToCountries(countries, covidData);
+
+                // 开始日期
+                const startDate = new Date("2020/01/22");
+                let i = 0;
+                // 自动绘制
+                const timer = setInterval(() => {
+                    const date = new Date(startDate.getTime() + 86400000 * ++i);
+                    drawMap(ctx, countries, date);
+                    if (date.getTime() + 86400000 > Date.now()) {
+                        clearInterval(timer);
+                    }
+                }, 100);
+                drawMap(ctx, countries, startDate);
+            })();
+        </script>
+    </body>
+</html>
