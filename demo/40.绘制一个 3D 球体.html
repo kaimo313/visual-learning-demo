@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>绘制一个 3D 球体</title>
+        <style>
+            #container {
+                width: 600px;
+                height: 600px;
+                border: 1px dashed salmon;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="container"></div>
+        <script src="http://unpkg.com/spritejs/dist/spritejs.js"></script>
+        <script src="http://unpkg.com/sprite-extend-3d/dist/sprite-extend-3d.js"></script>
+        <script>
+            const { Scene } = spritejs;
+            const { Sphere, shaders } = spritejs.ext3d;
+
+            const container = document.getElementById("container");
+            // 创建场景对象
+            const scene = new Scene({
+                container,
+            });
+            // 添加 Layer，设置透视相机，视角为 35 度，位置为 0, 0, 5
+            const layer = scene.layer3d("fglayer", {
+                alpha: false,
+                camera: {
+                    fov: 35,
+                    pos: [0, 0, 5],
+                },
+            });
+            // shaders.GEOMETRY 是一个符合 Phong 反射模型的几何体 Shader
+            const program = layer.createProgram({
+                ...shaders.GEOMETRY,
+                cullFace: null,
+            });
+            // 创建一个球体
+            const globe = new Sphere(program, {
+                colors: "skyblue",
+                widthSegments: 64,
+                heightSegments: 32,
+                radius: 1,
+            });
+
+            layer.append(globe);
+        </script>
+    </body>
+</html>
